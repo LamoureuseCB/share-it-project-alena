@@ -33,9 +33,6 @@ public class UserController {
     @GetMapping("/{id}")
     public UserResponseDto findById(@PathVariable Long id) {
         User user = userService.findById(id);
-        if (user == null) {
-            throw new NotFoundException("Пользователь не найден");
-        }
         return userMapper.toResponse(user);
     }
 
@@ -50,8 +47,7 @@ public class UserController {
     @PatchMapping("/{id}")
     public UserResponseDto update(@PathVariable Long id, @Valid @RequestBody UserUpdateDto userUpdateDto) {
         User user = userMapper.fromUpdate(userUpdateDto);
-        user.setId(id);
-        User updatedUser = userService.update(user);
+        User updatedUser = userService.update(user, id);
         return userMapper.toResponse(updatedUser);
     }
 

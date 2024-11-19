@@ -1,5 +1,6 @@
 package com.practice.shareitprojectalena.item.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,6 +11,6 @@ import lombok.Setter;
 public class ItemCreateDto {
     private String name;
     private String description;
-    private boolean isAvailable;
-    private Long ownerId;
+    @NotNull
+    private Boolean available;
 }

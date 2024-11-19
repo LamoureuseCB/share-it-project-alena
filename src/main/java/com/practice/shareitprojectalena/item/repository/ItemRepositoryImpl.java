@@ -1,6 +1,7 @@
 package com.practice.shareitprojectalena.item.repository;
 
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
+import com.practice.shareitprojectalena.error.exceptions.ValidationException;
 import com.practice.shareitprojectalena.item.entity.Item;
 import com.practice.shareitprojectalena.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -10,10 +11,10 @@ import java.util.*;
 
 @Component
 @RequiredArgsConstructor
-public abstract class ItemRepositoryImpl implements ItemRepository {
+public  class ItemRepositoryImpl implements ItemRepository {
 
     private Map<Long, Item> items = new HashMap<>();
-    private Long idCounter = 0L;
+    private Long idCounter = 1L;
 
     @Override
     public Item create(Item item) {
@@ -23,11 +24,8 @@ public abstract class ItemRepositoryImpl implements ItemRepository {
     }
 
     @Override
-    public Item update(Item item) {
-        if (!items.containsKey(item.getId())) {
-            throw new NotFoundException("Вещь для проката  с ID " + item.getId() + " не найден");
-        }
-        items.put(item.getId(), item);
+    public Item update(Item item,Long itemId) {
+        items.put(itemId, item);
         return item;
     }
 
@@ -44,9 +42,10 @@ public abstract class ItemRepositoryImpl implements ItemRepository {
     @Override
     public List<Item> searchItems(String text) {
         if (text == null || text.isBlank()) {
-            throw new RuntimeException("Поле должно быть заполнено");
+            throw new ValidationException("Поле должно быть заполнено");
         }
         return items.values().stream()
+                .filter(item -> item.getIsAvailable())
                 .filter(item -> item.getName().toLowerCase().contains(text.toLowerCase()) || item.getDescription().toLowerCase().contains(text.toLowerCase()))
                 .toList();
     }
@@ -54,9 +53,6 @@ public abstract class ItemRepositoryImpl implements ItemRepository {
 
     @Override
     public void deleteById(Long id) {
-        if (!items.containsKey(id)) {
-            throw new NotFoundException("Вещь для проката с ID " + id + " не найдена");
-        }
         items.remove(id);
 
     }

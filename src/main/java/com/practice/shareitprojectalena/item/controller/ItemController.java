@@ -11,11 +11,14 @@ import com.practice.shareitprojectalena.item.entity.Item;
 import com.practice.shareitprojectalena.item.mapper.ItemMapper;
 import com.practice.shareitprojectalena.item.service.ItemService;
 import com.practice.shareitprojectalena.user.entity.User;
+import com.practice.shareitprojectalena.utils.RequestConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
+import static com.practice.shareitprojectalena.utils.RequestConstants.*;
 
 
 @RestController
@@ -27,27 +30,22 @@ public class ItemController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ItemResponseDto create(@RequestHeader User owner, @RequestBody ItemCreateDto itemCreateDto) {
-        Item item = itemMapper.fromCreate(itemCreateDto, owner);
-        Item createdItem = itemService.create(item);
+    public ItemResponseDto create(@RequestHeader(USER_HEADER) Long userId, @RequestBody ItemCreateDto itemCreateDto) {
+        Item item = itemMapper.fromCreate(itemCreateDto);
+        Item createdItem = itemService.create(item,userId);
         return itemMapper.toResponse(createdItem);
     }
 
-    @PutMapping("/{id}")
-    public ItemResponseDto update(@PathVariable Long id, @RequestBody ItemUpdateDto itemUpdateDto) {
-        Item item = itemService.findById(id)
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
-
-        item.setName(itemUpdateDto.getName());
-        item.setDescription(itemUpdateDto.getDescription());
-        Item updatedItem = itemService.update(item);
+    @PutMapping("/{itemId}")
+    public ItemResponseDto update(@RequestHeader(USER_HEADER) Long userId,@PathVariable Long itemId, @RequestBody ItemUpdateDto itemUpdateDto) {
+        Item item = itemMapper.fromUpdate(itemUpdateDto);
+        Item updatedItem = itemService.update(item,itemId,userId);
         return itemMapper.toResponse(updatedItem);
     }
 
     @GetMapping("/{id}")
     public ItemResponseDto findById(@PathVariable Long id) {
-        Item item = itemService.findById(id)
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+        Item item = itemService.findById(id);
         return itemMapper.toResponse(item);
     }
 

@@ -3,6 +3,8 @@ package com.practice.shareitprojectalena.item.service;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.item.entity.Item;
 import com.practice.shareitprojectalena.item.repository.ItemRepository;
+import com.practice.shareitprojectalena.user.entity.User;
+import com.practice.shareitprojectalena.user.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,17 +15,22 @@ import java.util.Optional;
 @Service
 public class ItemService {
     private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
 
-    public Item create(Item item) {
+    public Item create(Item item, Long userId) {
+
+        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь по данному ID не найден"));
+        item.setOwner(user);
         return itemRepository.create(item);
     }
 
-    public Optional<Item> findById(Long id) {
-        return Optional.of(itemRepository.findById(id).orElseThrow(() -> new NotFoundException("Item not found")));
+    public Item findById(Long id) {
+        return itemRepository.findById(id).orElseThrow(() -> new NotFoundException("Вещь для проката по данному ID не найдена"));
     }
 
-    public Item update(Item item) {
-        return itemRepository.update(item);
+    public Item update(Item item, Long itemId, Long userId) {
+
+        return itemRepository.update(item, itemId);
     }
 
     public List<Item> findAll() {
@@ -31,9 +38,7 @@ public class ItemService {
     }
 
     public void delete(Long id) {
-        if (!itemRepository.existsById(id)) {
-            throw new NotFoundException("Вещь для проката с ID " + id + " не найдена");
-        }
+        findById(id);
         itemRepository.deleteById(id);
     }
 

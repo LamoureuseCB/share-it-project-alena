@@ -1,5 +1,6 @@
 package com.practice.shareitprojectalena.user.dto;
 
+import jakarta.validation.constraints.Email;
 import lombok.*;
 
 @Getter
@@ -9,5 +10,6 @@ import lombok.*;
 @AllArgsConstructor
 public class UserUpdateDto {
     private String name;
+    @Email
     private String email;
 }

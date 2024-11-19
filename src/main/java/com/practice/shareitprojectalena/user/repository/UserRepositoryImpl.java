@@ -9,9 +9,9 @@ import java.util.*;
 
 @Component
 @RequiredArgsConstructor
-public abstract class UserRepositoryImpl implements UserRepository {
+public  class UserRepositoryImpl implements UserRepository {
     private final Map<Long, User> users = new HashMap<>();
-    private Long idCounter = 0L;
+    private Long idCounter = 1L;
 
     @Override
     public List<User> findAll() {
@@ -33,20 +33,19 @@ public abstract class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public User update(User user) {
-        if (!users.containsKey(user.getId())) {
-            throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
-        }
-        users.put(user.getId(), user);
+    public User update(User user,Long id) {
+        users.put(id, user);
         return user;
     }
 
     @Override
     public void deleteById(Long id) {
-        if (!users.containsKey(id)) {
-            throw new NotFoundException("Пользователь с ID " + id + " не найден");
-        }
         users.remove(id);
 
     }
+    @Override
+    public Optional<User> findByEmail(String email){
+       return users.values().stream().filter(user -> user.getEmail().equals(email)).findFirst();
+    }
+
 }

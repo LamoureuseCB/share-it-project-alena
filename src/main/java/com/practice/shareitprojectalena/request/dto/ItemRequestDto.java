@@ -1,10 +1,8 @@
 package com.practice.shareitprojectalena.request.dto;
 
-import com.practice.shareitprojectalena.item.dto.ItemDto;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @Setter

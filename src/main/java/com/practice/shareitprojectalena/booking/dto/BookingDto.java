@@ -1,7 +1,7 @@
 package com.practice.shareitprojectalena.booking.dto;
 
 import com.practice.shareitprojectalena.booking.BookingStatus;
-import jakarta.persistence.Enumerated;
+
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -18,6 +18,6 @@ public class BookingDto {
     private LocalDateTime end;
     private Long itemId;
     private Long bookerId;
-    @Enumerated
+//    @Enumerated
     private BookingStatus bookingStatus;
 }
