@@ -32,10 +32,10 @@ public class ItemMapper {
     }
 
     public void merge(Item existingItem, Item updatedItem) {
-        if (updatedItem.getName() != null) {
+        if (updatedItem.getName() != null && !updatedItem.getName().isBlank()) {
             existingItem.setName(updatedItem.getName());
         }
-        if (updatedItem.getDescription() != null) {
+        if (updatedItem.getDescription() != null && !updatedItem.getDescription().isBlank()) {
             existingItem.setDescription(updatedItem.getDescription());
         }
         if (updatedItem.getIsAvailable() != null) {
@@ -50,8 +50,6 @@ public class ItemMapper {
                 .name(item.getName())
                 .description(item.getDescription())
                 .available(item.getIsAvailable())
-//                .ownerId(item.getOwner())
-//                .requestId(item.getRequest())
                 .build();
     }
 

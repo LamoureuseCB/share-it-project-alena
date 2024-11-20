@@ -1,5 +1,6 @@
 package com.practice.shareitprojectalena.item.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
@@ -9,8 +10,10 @@ import lombok.Setter;
 @Setter
 @Builder
 public class ItemCreateDto {
+    @NotBlank(message = "Имя не может быть пустым")
     private String name;
+    @NotBlank(message = "Описание не может быть пустым")
     private String description;
-    @NotNull
+    @NotNull(message = "Статус должен быть заполнен")
     private Boolean available;
 }

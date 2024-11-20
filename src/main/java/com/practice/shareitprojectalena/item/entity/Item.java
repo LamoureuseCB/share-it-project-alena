@@ -3,6 +3,7 @@ package com.practice.shareitprojectalena.item.entity;
 
 import com.practice.shareitprojectalena.user.entity.User;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 
@@ -16,7 +17,6 @@ import lombok.*;
 @AllArgsConstructor
 
 public class Item {
-
     private Long id;
     private String name;
     private String description;
