@@ -23,7 +23,7 @@ public class UserService {
         if (userEmail.isPresent()) {
             throw new ConflictException("Пользователь с данной электронной почтой уже существует");
         }
-        return userRepository.create(user);
+        return userRepository.save(user);
     }
 
     public User findById(Long id) {
@@ -41,7 +41,7 @@ public class UserService {
         }
         User existingUser = findById(id);
         userMapper.merge(existingUser, updatedUser);
-        return userRepository.update(existingUser, id);
+        return userRepository.save(existingUser);
     }
 
     public List<User> findAll() {

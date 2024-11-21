@@ -1,24 +1,18 @@
 package com.practice.shareitprojectalena.item.repository;
-
-
 import com.practice.shareitprojectalena.item.entity.Item;
-
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
-public interface ItemRepository {
-    Item create(Item Item);
+public interface ItemRepository extends JpaRepository<Item,Long> {
+    List<Item> findAllByOwner_Id(Long userId);
+   @Query("select i from Item i " +
+           "where( upper(i.name)  like concat ('%',upper(:text) ,'%')" +
+           " or upper(i.description) like concat ('%',upper(:text),'%'))" +
+           " and i.isAvailable = true ")
+    List<Item> search(String text);
 
-    Item update(Item item, Long id, Long userId);
-
-    List<Item> findAll(Long userId);
-
-    Optional<Item> findById(Long id);
-
-    List<Item> searchItems(String text);
-
-    void deleteById(Long id);
 }

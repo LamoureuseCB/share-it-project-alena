@@ -28,7 +28,7 @@ public class ItemService {
                 .orElseThrow(() -> new NotFoundException("Пользователь по данному ID не найден"));
 
         item.setOwner(user);
-        return itemRepository.create(item);
+        return itemRepository.save(item);
     }
 
 
@@ -43,12 +43,12 @@ public class ItemService {
         }
 
         itemMapper.merge(existingItem, item);
-        itemRepository.update(item, itemId, userId);
-        return existingItem;
+        return itemRepository.save(existingItem);
+
     }
 
     public List<Item> findAll(Long userId) {
-        return itemRepository.findAll(userId);
+        return itemRepository.findAllByOwner_Id(userId);
     }
 
     public void delete(Long id) {
@@ -60,7 +60,7 @@ public class ItemService {
         if(text.isBlank()){
             return Collections.emptyList();
         }
-        return itemRepository.searchItems(text);
+        return itemRepository.search(text);
     }
 
 }
