@@ -9,6 +9,7 @@ import com.practice.shareitprojectalena.item.entity.Item;
 import com.practice.shareitprojectalena.item.mapper.ItemMapper;
 import com.practice.shareitprojectalena.item.service.ItemService;
 
+import com.practice.shareitprojectalena.user.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -50,8 +51,8 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemResponseDto> findAll() {
-        List<Item> items = itemService.findAll();
+    public List<ItemResponseDto> findAll(@RequestHeader(USER_HEADER) Long userId) {
+        List<Item> items = itemService.findAll(userId);
         return itemMapper.toResponse(items);
     }
 

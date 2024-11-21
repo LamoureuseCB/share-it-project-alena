@@ -1,5 +1,6 @@
 package com.practice.shareitprojectalena.error.errorHandler;
 
+import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.error.exceptions.ValidationException;
 import org.springframework.http.HttpStatus;
@@ -24,5 +25,10 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse runtimeExceptionHandle(final RuntimeException e) {
         return new ErrorResponse("Сервер не может обработать запрос", e.getMessage());
+    }
+    @ExceptionHandler(ForbiddenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse forbiddenExceptionHandle(final ForbiddenException e){
+        return new ErrorResponse("Вносить изменения может только владелец", e.getMessage());
     }
 }

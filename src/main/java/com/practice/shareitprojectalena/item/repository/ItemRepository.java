@@ -14,7 +14,7 @@ public interface ItemRepository {
 
     Item update(Item item, Long id, Long userId);
 
-    List<Item> findAll();
+    List<Item> findAll(Long userId);
 
     Optional<Item> findById(Long id);
 

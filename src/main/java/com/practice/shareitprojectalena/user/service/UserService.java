@@ -1,5 +1,6 @@
 package com.practice.shareitprojectalena.user.service;
 
+import com.practice.shareitprojectalena.error.exceptions.ConflictException;
 import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.user.entity.User;
@@ -20,7 +21,7 @@ public class UserService {
     public User create(User user) {
         Optional<User> userEmail = userRepository.findByEmail(user.getEmail());
         if (userEmail.isPresent()) {
-            throw new ForbiddenException("Пользователь с данной электронной почтой уже существует");
+            throw new ConflictException("Пользователь с данной электронной почтой уже существует");
         }
         return userRepository.create(user);
     }
@@ -35,7 +36,7 @@ public class UserService {
         if (userEmail.isPresent()) {
             User user = userEmail.get();
             if (!user.getId().equals(id)) {
-                throw new ForbiddenException("Пользователь с данной электронной почтой уже существует");
+                throw new ConflictException("Пользователь с данной электронной почтой уже существует");
             }
         }
         User existingUser = findById(id);

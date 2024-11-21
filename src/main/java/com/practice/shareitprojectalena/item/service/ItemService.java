@@ -1,8 +1,10 @@
 package com.practice.shareitprojectalena.item.service;
 
+import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.error.exceptions.ValidationException;
 import com.practice.shareitprojectalena.item.entity.Item;
+import com.practice.shareitprojectalena.item.mapper.ItemMapper;
 import com.practice.shareitprojectalena.item.repository.ItemRepository;
 import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.user.repository.UserRepository;
@@ -10,6 +12,7 @@ import com.practice.shareitprojectalena.user.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 
 
@@ -18,6 +21,7 @@ import java.util.List;
 public class ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private final ItemMapper itemMapper;
 
     public Item create(Item item, Long userId) {
         User user = userRepository.findById(userId)
@@ -33,16 +37,18 @@ public class ItemService {
     }
 
     public Item update(Item item, Long itemId, Long userId) {
-        Item existingItem = itemRepository.findById(itemId).orElseThrow(() -> new NotFoundException("Вещь для проката по данному ID не найдена"));
-        if (!existingItem.getOwner().getId().equals(item.getOwner().getId())) {
-            throw new ValidationException("Обновлять параметры вещи может только владелец");
+        Item existingItem = findById(itemId);
+        if (!existingItem.getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("Обновлять параметры вещи может только владелец");
         }
+
+        itemMapper.merge(existingItem, item);
         itemRepository.update(item, itemId, userId);
         return existingItem;
     }
 
-    public List<Item> findAll() {
-        return itemRepository.findAll();
+    public List<Item> findAll(Long userId) {
+        return itemRepository.findAll(userId);
     }
 
     public void delete(Long id) {
@@ -51,8 +57,10 @@ public class ItemService {
     }
 
     public List<Item> searchItems(String text) {
+        if(text.isBlank()){
+            return Collections.emptyList();
+        }
         return itemRepository.searchItems(text);
     }
-
 
 }
