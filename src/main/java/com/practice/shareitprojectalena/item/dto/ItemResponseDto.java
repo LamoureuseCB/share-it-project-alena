@@ -1,9 +1,12 @@
 package com.practice.shareitprojectalena.item.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.practice.shareitprojectalena.item.comment.Comment;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -14,6 +17,6 @@ public class ItemResponseDto {
     private String description;
     @JsonProperty("available")
     private boolean available;
-//    private Long ownerId;
-//    private List<Comment> comments;
+    private List<Comment> comments;
+
 }

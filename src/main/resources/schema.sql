@@ -12,6 +12,7 @@ create table items
     is_available boolean      not null,
     owner_id     int references users (id) not null
 );
+
 create table bookings
 (
     id         serial primary key,
@@ -19,7 +20,7 @@ create table bookings
     end_date   timestamp without time zone not null,
     item_id    int references items (id) not null,
     booker_id  int references users (id) not null,
-    status     int       not null
+    status     varchar       not null
 
 );
 create table comments

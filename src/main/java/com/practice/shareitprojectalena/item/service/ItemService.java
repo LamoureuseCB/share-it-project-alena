@@ -2,7 +2,6 @@ package com.practice.shareitprojectalena.item.service;
 
 import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
-import com.practice.shareitprojectalena.error.exceptions.ValidationException;
 import com.practice.shareitprojectalena.item.entity.Item;
 import com.practice.shareitprojectalena.item.mapper.ItemMapper;
 import com.practice.shareitprojectalena.item.repository.ItemRepository;
@@ -26,7 +25,6 @@ public class ItemService {
     public Item create(Item item, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь по данному ID не найден"));
-
         item.setOwner(user);
         return itemRepository.save(item);
     }

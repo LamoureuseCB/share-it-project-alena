@@ -1,4 +1,4 @@
-package com.practice.shareitprojectalena.booking;
+package com.practice.shareitprojectalena.utils;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

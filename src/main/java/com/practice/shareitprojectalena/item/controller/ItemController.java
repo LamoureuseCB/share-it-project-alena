@@ -1,6 +1,9 @@
 package com.practice.shareitprojectalena.item.controller;
 
 
+import com.practice.shareitprojectalena.item.comment.Comment;
+import com.practice.shareitprojectalena.item.comment.CommentService;
+
 import com.practice.shareitprojectalena.item.dto.ItemCreateDto;
 
 import com.practice.shareitprojectalena.item.dto.ItemResponseDto;
@@ -9,13 +12,16 @@ import com.practice.shareitprojectalena.item.entity.Item;
 import com.practice.shareitprojectalena.item.mapper.ItemMapper;
 import com.practice.shareitprojectalena.item.service.ItemService;
 
+
 import com.practice.shareitprojectalena.user.entity.User;
+import com.practice.shareitprojectalena.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 
 import static com.practice.shareitprojectalena.utils.RequestConstants.*;
 
@@ -26,6 +32,8 @@ import static com.practice.shareitprojectalena.utils.RequestConstants.*;
 public class ItemController {
     private final ItemService itemService;
     private final ItemMapper itemMapper;
+    private UserService userService;
+    private final CommentService commentService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -68,4 +76,32 @@ public class ItemController {
     public void delete(@PathVariable Long id) {
         itemService.delete(id);
     }
+
+    @PostMapping("/{itemId}/comment")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Comment create(@RequestHeader(USER_HEADER) Long userId, @RequestBody @Valid String description, @PathVariable Long itemId) {
+        User user = userService.findById(userId);
+        return commentService.addComment(itemId, user, description);
+
+    }
+
+    @GetMapping("/{itemId}")
+    public ItemResponseDto getItemWithComments(@PathVariable Long itemId) {
+        Item item = itemService.findById(itemId);
+        List<Comment> comments = commentService.findByItemId(itemId);
+        return itemMapper.toResponseWithComments(item, comments);
+    }
+
+    @GetMapping
+    public List<ItemResponseDto> getAllItemComments(Long userId) {
+        List<Item> items = itemService.findAll(userId);
+        return items.stream()
+                .map(item -> {
+                    List<Comment> comments = commentService.findByItemId(item.getId());
+                    return itemMapper.toResponseWithComments(item, comments);
+                }).toList();
+
+    }
 }
+
+
