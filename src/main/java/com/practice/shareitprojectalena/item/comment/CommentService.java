@@ -1,10 +1,9 @@
 package com.practice.shareitprojectalena.item.comment;
 
-import com.practice.shareitprojectalena.booking.repository.BookingRepository;
+import com.practice.shareitprojectalena.booking.BookingRepository;
 import com.practice.shareitprojectalena.error.exceptions.ConflictException;
-import com.practice.shareitprojectalena.item.entity.Item;
-import com.practice.shareitprojectalena.item.repository.ItemRepository;
-import com.practice.shareitprojectalena.item.service.ItemService;
+import com.practice.shareitprojectalena.item.Item;
+import com.practice.shareitprojectalena.item.ItemService;
 import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.utils.BookingStatus;
 import lombok.RequiredArgsConstructor;

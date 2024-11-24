@@ -1,7 +1,7 @@
 package com.practice.shareitprojectalena.user.entity;
 
 
-import com.practice.shareitprojectalena.item.entity.Item;
+import com.practice.shareitprojectalena.item.Item;
 import jakarta.persistence.*;
 import lombok.*;
 

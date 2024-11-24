@@ -1,6 +1,6 @@
 package com.practice.shareitprojectalena.item.comment;
 
-import com.practice.shareitprojectalena.item.comment.dto.CommentResponseDto;
+import com.practice.shareitprojectalena.item.comment.commentDto.CommentResponseDto;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

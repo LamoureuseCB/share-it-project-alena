@@ -1,6 +1,6 @@
 package com.practice.shareitprojectalena.item.comment;
 
-import com.practice.shareitprojectalena.item.entity.Item;
+import com.practice.shareitprojectalena.item.Item;
 import com.practice.shareitprojectalena.user.entity.User;
 
 import jakarta.persistence.*;

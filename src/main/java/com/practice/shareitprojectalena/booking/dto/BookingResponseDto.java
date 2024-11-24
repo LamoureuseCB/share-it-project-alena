@@ -1,11 +1,10 @@
 package com.practice.shareitprojectalena.booking.dto;
 
 import com.practice.shareitprojectalena.utils.BookingStatus;
-import com.practice.shareitprojectalena.item.dto.ItemResponseDto;
+import com.practice.shareitprojectalena.item.itemDto.ItemResponseDto;
 import com.practice.shareitprojectalena.user.dto.UserResponseDto;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 @Getter
