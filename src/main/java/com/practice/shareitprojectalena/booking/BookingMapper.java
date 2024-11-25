@@ -41,6 +41,7 @@ public class BookingMapper {
 
     public BookingResponseDto toResponse(Booking booking) {
         return BookingResponseDto.builder()
+                .id(booking.getId())
                 .itemId(booking.getItem().getId())
                 .start(booking.getStart())
                 .end(booking.getEnd())

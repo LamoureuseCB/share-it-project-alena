@@ -1,7 +1,9 @@
 package com.practice.shareitprojectalena.item.itemDto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.practice.shareitprojectalena.booking.dto.BookingResponseDto;
 import com.practice.shareitprojectalena.item.comment.Comment;
+import com.practice.shareitprojectalena.item.comment.commentDto.CommentResponseDto;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,6 +19,10 @@ public class ItemResponseDto {
     private String description;
     @JsonProperty("available")
     private boolean available;
-    private List<Comment> comments;
+    private List<CommentResponseDto> comments;
+    private BookingResponseDto lastBooking;
+    private BookingResponseDto nextBooking;
+
+
 
 }

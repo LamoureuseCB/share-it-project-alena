@@ -9,5 +9,4 @@ import java.util.List;
 @Repository
 public interface CommentRepository extends JpaRepository<Comment,Long> {
     List<Comment> findByItemId(Long itemId);
-    Comment addComment(Long itemId, User author, String description);
 }

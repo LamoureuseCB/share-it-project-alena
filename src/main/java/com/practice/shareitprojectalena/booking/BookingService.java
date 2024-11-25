@@ -32,14 +32,16 @@ public class BookingService {
                 .orElseThrow(() -> new NotFoundException("Пользователь по данному ID не найден"));
         booking.setBooker(booker);
         booking.setItem(item);
+        booking.setStatus(BookingStatus.WAITING);
         return bookingRepository.save(booking);
     }
 
-    public Booking update(Long bookingId, Long bookerId,boolean approved ) {
+    public Booking update(Long bookingId, Long userId,boolean approved ) {
         Booking existingBooking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование по данному ID не найдено"));
 
-        if (!existingBooking.getBooker().getId().equals(bookerId)) {
+        Long ownerId = existingBooking.getItem().getOwner().getId();
+        if (!ownerId.equals(userId)) {
             throw new NotFoundException("Обновить бронирование невозможно");
         }
         if(approved){
@@ -89,8 +91,8 @@ public class BookingService {
         return bookings;
     }
 
-    public List<Booking> getBookingByOwner(State state, Long ownerId) {
-        User owner = userRepository.findById(ownerId)
+    public List<Booking> getBookingByBooker(State state, Long bookerId) {
+        User owner = userRepository.findById(bookerId)
                 .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
         List<Booking> bookingsByOwner = new ArrayList<>();
         switch (state) {

@@ -10,9 +10,9 @@ import java.util.List;
 @Builder
 public class CommentResponseDto {
    private int id;
-   private String description;
+   private String text;
    private String authorName;
    private LocalDateTime created;
-   private List<CommentResponseDto> comments;
+
 
 }

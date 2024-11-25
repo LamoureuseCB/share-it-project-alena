@@ -2,7 +2,10 @@ package com.practice.shareitprojectalena.item;
 
 
 import com.practice.shareitprojectalena.item.comment.Comment;
+import com.practice.shareitprojectalena.item.comment.CommentMapper;
 import com.practice.shareitprojectalena.item.comment.CommentService;
+import com.practice.shareitprojectalena.item.comment.commentDto.CommentCreateDto;
+import com.practice.shareitprojectalena.item.comment.commentDto.CommentResponseDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemCreateDto;
 
 import com.practice.shareitprojectalena.item.itemDto.ItemResponseDto;
@@ -28,8 +31,9 @@ import static com.practice.shareitprojectalena.utils.RequestConstants.*;
 public class ItemController {
     private final ItemService itemService;
     private final ItemMapper itemMapper;
-    private UserService userService;
+    private final UserService userService;
     private final CommentService commentService;
+    private final CommentMapper commentMapper;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -48,11 +52,11 @@ public class ItemController {
         return itemMapper.toResponse(updatedItem);
     }
 
-    @GetMapping("/{id}")
-    public ItemResponseDto findById(@PathVariable Long id) {
-        Item item = itemService.findById(id);
-        return itemMapper.toResponse(item);
-    }
+//    @GetMapping("/{id}")
+//    public ItemResponseDto findById(@PathVariable Long id) {
+//        Item item = itemService.findById(id);
+//        return itemMapper.toResponse(item);
+//    }
 
     @GetMapping
     public List<ItemResponseDto> findAll(@RequestHeader(USER_HEADER) Long userId) {
@@ -75,9 +79,9 @@ public class ItemController {
 
     @PostMapping("/{itemId}/comment")
     @ResponseStatus(HttpStatus.CREATED)
-    public Comment create(@RequestHeader(USER_HEADER) Long userId, @RequestBody @Valid String description, @PathVariable Long itemId) {
+    public CommentResponseDto create(@RequestHeader(USER_HEADER) Long userId, @RequestBody @Valid CommentCreateDto commentCreateDto, @PathVariable Long itemId) {
         User user = userService.findById(userId);
-        return commentService.addComment(itemId, user, description);
+        return commentMapper.toResponse(commentService.addComment(itemId, user, commentCreateDto.getText()));
 
     }
 
@@ -88,16 +92,16 @@ public class ItemController {
         return itemMapper.toResponseWithComments(item, comments);
     }
 
-    @GetMapping
-    public List<ItemResponseDto> getAllItemComments(Long userId) {
-        List<Item> items = itemService.findAll(userId);
-        return items.stream()
-                .map(item -> {
-                    List<Comment> comments = commentService.findByItemId(item.getId());
-                    return itemMapper.toResponseWithComments(item, comments);
-                }).toList();
-
-    }
+//    @GetMapping
+//    public List<ItemResponseDto> getAllItemComments(Long userId) {
+//        List<Item> items = itemService.findAll(userId);
+//        return items.stream()
+//                .map(item -> {
+//                    List<Comment> comments = commentService.findByItemId(item.getId());
+//                    return itemMapper.toResponseWithComments(item, comments);
+//                }).toList();
+//
+//    }
 }
 
 

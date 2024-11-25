@@ -26,7 +26,7 @@ public class CommentService {
 
 
     public Comment addComment(Long itemId, User author, String description) {
-        boolean authorHasBooking = bookingRepository.findByItem_IdAndBooker_IdAndStatusAndEndBefore(itemId, author.getId(), BookingStatus.APPROVED, LocalDateTime.now());
+        boolean authorHasBooking = bookingRepository.existsByItem_IdAndBooker_IdAndStatusAndEndBefore(itemId, author.getId(), BookingStatus.APPROVED, LocalDateTime.now());
         if (!authorHasBooking) {
             throw new ConflictException("Нельзя оставить комментарий если вы не бронировали вещь и не пользовались сервисом Share it");
         }
@@ -34,7 +34,7 @@ public class CommentService {
         Comment comment = new Comment();
         comment.setItem(item);
         comment.setAuthor(author);
-        comment.setDescription(description);
+        comment.setText(description);
         comment.setCreated(LocalDateTime.now());
         return commentRepository.save(comment);
     }

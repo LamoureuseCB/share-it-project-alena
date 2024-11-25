@@ -81,9 +81,9 @@ public class BookingController {
 
     @GetMapping
     public List<BookingResponseDto> getBookingsByState(
-            @RequestHeader(USER_HEADER) Long ownerId,
+            @RequestHeader(USER_HEADER) Long userId,
             @RequestParam(defaultValue = "ALL") State state) {
-        List<Booking> bookings = bookingService.getByStateAndOwner(state, ownerId);
+        List<Booking> bookings = bookingService.getBookingByBooker(state, userId);
         return bookings.stream().map(bookingMapper::toResponse).toList();
     }
 
@@ -105,7 +105,7 @@ public class BookingController {
     public List<BookingResponseDto> getBookingsByOwner(
             @RequestHeader(USER_HEADER) Long ownerId,
             @RequestParam(defaultValue = "ALL") State state) {
-        List<Booking> bookings = bookingService.getBookingByOwner(state, ownerId);
+        List<Booking> bookings = bookingService.getBookingByBooker(state, ownerId);
         return bookings.stream().map(bookingMapper::toResponse).toList();
     }
 }

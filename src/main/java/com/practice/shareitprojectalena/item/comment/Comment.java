@@ -24,7 +24,7 @@ public class Comment {
 
     @NotNull
     @Size(max = 122)
-    private String description;
+    private String text;
 
     @NotNull
     @ManyToOne
