@@ -2,12 +2,10 @@ package com.practice.shareitprojectalena.item;
 
 
 import com.practice.shareitprojectalena.booking.Booking;
-import com.practice.shareitprojectalena.booking.BookingMapper;
 import com.practice.shareitprojectalena.booking.BookingRepository;
 import com.practice.shareitprojectalena.booking.dto.BookingResponseDto;
 import com.practice.shareitprojectalena.item.comment.Comment;
 import com.practice.shareitprojectalena.item.comment.CommentMapper;
-import com.practice.shareitprojectalena.item.comment.CommentService;
 import com.practice.shareitprojectalena.item.itemDto.ItemCreateDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemResponseDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemUpdateDto;
@@ -63,7 +61,6 @@ public class ItemMapper {
                 .name(item.getName())
                 .description(item.getDescription())
                 .available(item.getIsAvailable())
-//                .comments(commentMapper.toResponse(item.getComments()))
                 .build();
     }
 

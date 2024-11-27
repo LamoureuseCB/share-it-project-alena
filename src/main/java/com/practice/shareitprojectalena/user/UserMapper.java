@@ -34,17 +34,20 @@ public class UserMapper {
                 .email(user.getEmail())
                 .build();
     }
-    public List<UserResponseDto> toResponse(List<User> users){
+
+    public List<UserResponseDto> toResponse(List<User> users) {
         return users.stream()
                 .map(this::toResponse)
                 .toList();
     }
 
+    @SuppressWarnings("checkstyle:Regexp")
     public void merge(User existing, User updated) {
-        if(updated.getName()!= null){
+        if (updated.getName() != null) {
             existing.setName(updated.getName());
         }
-        if(updated.getEmail()!= null){
+
+        if (updated.getEmail() != null) {
             existing.setEmail(updated.getEmail());
         }
 

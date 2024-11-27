@@ -4,6 +4,7 @@ import com.practice.shareitprojectalena.item.comment.commentDto.CommentResponseD
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+
 @Component
 public class CommentMapper {
     public CommentResponseDto toResponse(Comment comment) {

@@ -17,22 +17,8 @@ public class ItemRequestMapper {
     }
 
 
-//    public static ItemRequest toItemRequest(ItemRequestDto itemRequestDto) {
-//        return ItemRequest.builder()
-//                .id(itemRequestDto.getId())
-//                .description(itemRequestDto.getDescription())
-//                .requester()
-//                .created(itemRequestDto.getCreated())
-//                .build();
-//    }
-    public static List<ItemRequestDto> toDto(List<ItemRequest> itemRequests){
+public static List<ItemRequestDto> toDto(List<ItemRequest> itemRequests) {
         return itemRequests.stream().map(ItemRequestMapper::toDto).toList();
     }
-
-//    public static List<ItemRequest> toItemRequest(List<ItemRequestDto> itemRequestsDtos) {
-//        return itemRequestsDtos.stream()
-//                .map(ItemRequestMapper::toItemRequest)
-//                .toList();
-//    }
 
 }

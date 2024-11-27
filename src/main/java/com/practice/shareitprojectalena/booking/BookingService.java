@@ -4,7 +4,6 @@ import com.practice.shareitprojectalena.utils.BookingStatus;
 import com.practice.shareitprojectalena.error.exceptions.ConflictException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.item.Item;
-import com.practice.shareitprojectalena.item.ItemService;
 import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.user.UserRepository;
 import com.practice.shareitprojectalena.utils.State;
@@ -12,7 +11,6 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,9 +18,7 @@ import java.util.Optional;
 @Service
 public class BookingService {
     private final BookingRepository bookingRepository;
-    private final BookingMapper bookingMapper;
     private final UserRepository userRepository;
-    private final ItemService itemService;
 
     public Booking create(Booking booking, Long bookerId, Item item) {
         if (!item.getIsAvailable()) {
@@ -36,7 +32,7 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
 
-    public Booking update(Long bookingId, Long userId,boolean approved ) {
+    public Booking update(Long bookingId, Long userId,boolean approved) {
         Booking existingBooking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование по данному ID не найдено"));
 
@@ -44,10 +40,9 @@ public class BookingService {
         if (!ownerId.equals(userId)) {
             throw new NotFoundException("Обновить бронирование невозможно");
         }
-        if(approved){
+        if (approved) {
             existingBooking.setStatus(BookingStatus.APPROVED);
-        }
-        else{
+        } else {
             existingBooking.setStatus(BookingStatus.REJECTED);
         }
 
@@ -60,7 +55,7 @@ public class BookingService {
     }
 
 
-    void deleteById(Long bookingId) {
+    public void  deleteById(Long bookingId) {
         bookingRepository.deleteById(bookingId);
     }
 
@@ -69,11 +64,12 @@ public class BookingService {
         return bookingRepository.findById(bookingId).orElseThrow(() -> new NotFoundException("Бронирование по данному ID не найдено"));
     }
 
+    @SuppressWarnings("checkstyle:NoWhitespaceBefore")
     public List<Booking> getByStateAndOwner(State state, Long ownerId) {
-        List<Booking> bookings = new ArrayList<>();
+        List<Booking> bookings;
         Optional<User> owner = userRepository.findById(ownerId);
         if (owner.isEmpty()) {
-            throw new ConflictException("Владелец с данным id не найден" + ownerId);
+            throw new ConflictException("Владелец с данным id не найден " + ownerId);
         }
         switch (state) {
             case PAST ->
@@ -94,11 +90,10 @@ public class BookingService {
     public List<Booking> getBookingByBooker(State state, Long bookerId) {
         User owner = userRepository.findById(bookerId)
                 .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
-        List<Booking> bookingsByOwner = new ArrayList<>();
+        List<Booking> bookingsByOwner;
         switch (state) {
-            case PAST -> {
+            case PAST ->
                 bookingsByOwner =  bookingRepository.findByBookerAndEndBeforeOrderByStartDesc(owner, LocalDateTime.now());
-            }
             case CURRENT ->
                     bookingsByOwner =  bookingRepository.findByBookerAndStartBeforeAndEndAfterOrderByStartDesc(owner, LocalDateTime.now(), LocalDateTime.now());
             case FUTURE ->
@@ -112,10 +107,4 @@ public class BookingService {
         }
         return bookingsByOwner;
     }
-
-
-
-
-
-
 }

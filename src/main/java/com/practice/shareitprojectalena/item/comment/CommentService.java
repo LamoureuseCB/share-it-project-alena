@@ -19,7 +19,7 @@ public class CommentService {
     private final BookingRepository bookingRepository;
     private final ItemService itemService;
 
-    public List<Comment> findByItemId(Long itemId){
+    public List<Comment> findByItemId(Long itemId) {
         return commentRepository.findByItemId(itemId);
     }
 

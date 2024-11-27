@@ -101,7 +101,8 @@ public class BookingController {
         return bookings.stream().map(bookingMapper::toResponse).toList();
 
     }
-    @GetMapping("/owner")
+
+    @GetMapping(value = "/owner")
     public List<BookingResponseDto> getBookingsByOwner(
             @RequestHeader(USER_HEADER) Long ownerId,
             @RequestParam(defaultValue = "ALL") State state) {

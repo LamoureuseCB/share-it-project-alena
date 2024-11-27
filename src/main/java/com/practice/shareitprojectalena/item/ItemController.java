@@ -52,12 +52,6 @@ public class ItemController {
         return itemMapper.toResponse(updatedItem);
     }
 
-//    @GetMapping("/{id}")
-//    public ItemResponseDto findById(@PathVariable Long id) {
-//        Item item = itemService.findById(id);
-//        return itemMapper.toResponse(item);
-//    }
-
     @GetMapping
     public List<ItemResponseDto> findAll(@RequestHeader(USER_HEADER) Long userId) {
         List<Item> items = itemService.findAll(userId);
@@ -92,16 +86,6 @@ public class ItemController {
         return itemMapper.toResponseWithComments(item, comments);
     }
 
-//    @GetMapping
-//    public List<ItemResponseDto> getAllItemComments(Long userId) {
-//        List<Item> items = itemService.findAll(userId);
-//        return items.stream()
-//                .map(item -> {
-//                    List<Comment> comments = commentService.findByItemId(item.getId());
-//                    return itemMapper.toResponseWithComments(item, comments);
-//                }).toList();
-//
-//    }
 }
 
 

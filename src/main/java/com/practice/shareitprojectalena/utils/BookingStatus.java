@@ -12,5 +12,4 @@ public enum BookingStatus {
     CANCELED("Бронирование отменено создателем");
 
     private final String message;
-
 }

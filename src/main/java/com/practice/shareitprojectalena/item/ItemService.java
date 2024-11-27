@@ -52,7 +52,7 @@ public class ItemService {
     }
 
     public List<Item> searchItems(String text) {
-        if(text.isBlank()){
+        if (text.isBlank()) {
             return Collections.emptyList();
         }
         return itemRepository.search(text);

@@ -24,28 +24,17 @@ public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @NotNull
     private String name;
-
     private String description;
-
     @NotNull
     @Column(name = "is_available", nullable = false)
     private Boolean isAvailable;
-
     @ManyToOne
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
-
     @OneToMany(mappedBy = "item")
     private List<Booking> bookings;
-
     @OneToMany(mappedBy = "item")
     private List<Comment> comments = new ArrayList<>();
-
-//    private ItemRequest request;
-
-
-
 }
