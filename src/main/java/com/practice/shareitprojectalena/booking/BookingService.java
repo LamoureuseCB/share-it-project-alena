@@ -1,13 +1,15 @@
 package com.practice.shareitprojectalena.booking;
 
-import com.practice.shareitprojectalena.utils.BookingStatus;
 import com.practice.shareitprojectalena.error.exceptions.ConflictException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.item.Item;
-import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.user.UserRepository;
+import com.practice.shareitprojectalena.user.entity.User;
+import com.practice.shareitprojectalena.utils.BookingStatus;
 import com.practice.shareitprojectalena.utils.State;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -64,7 +66,7 @@ public class BookingService {
         return bookingRepository.findById(bookingId).orElseThrow(() -> new NotFoundException("Бронирование по данному ID не найдено"));
     }
 
-    @SuppressWarnings("checkstyle:NoWhitespaceBefore")
+
     public List<Booking> getByStateAndOwner(State state, Long ownerId) {
         List<Booking> bookings;
         Optional<User> owner = userRepository.findById(ownerId);
@@ -87,7 +89,7 @@ public class BookingService {
         return bookings;
     }
 
-    public List<Booking> getBookingByBooker(State state, Long bookerId) {
+    public List<Booking> getBookingByBooker(State state, Long bookerId, int from, int size) {
         User owner = userRepository.findById(bookerId)
                 .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
         List<Booking> bookingsByOwner;
@@ -105,6 +107,10 @@ public class BookingService {
             default ->
                     bookingsByOwner =  bookingRepository.findByBookerOrderByStartDesc(owner);
         }
-        return bookingsByOwner;
+        Pageable pageable = PageRequest.of(from / size, size);
+        return bookingsByOwner.stream()
+                .skip(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .toList();
     }
 }

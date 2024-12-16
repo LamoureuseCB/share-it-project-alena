@@ -1,11 +1,17 @@
 package com.practice.shareitprojectalena.item;
 
 import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
+import com.practice.shareitprojectalena.error.exceptions.InvalidPageException;
+import com.practice.shareitprojectalena.error.exceptions.InvalidSizeException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
-import com.practice.shareitprojectalena.user.entity.User;
+import com.practice.shareitprojectalena.request.ItemRequestRepository;
+import com.practice.shareitprojectalena.request.entity.ItemRequest;
 import com.practice.shareitprojectalena.user.UserRepository;
-
+import com.practice.shareitprojectalena.user.entity.User;
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -17,12 +23,19 @@ import java.util.List;
 public class ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private final ItemRequestRepository itemRequestRepository;
     private final ItemMapper itemMapper;
 
     public Item create(Item item, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь по данному ID не найден"));
         item.setOwner(user);
+        if (item.getRequestId() != null) {
+            ItemRequest request = itemRequestRepository.findById(item.getRequestId())
+                    .orElseThrow(() -> new NotFoundException("Запрос не найден"));
+            item.setRequest(request);
+        }
+
         return itemRepository.save(item);
     }
 
@@ -36,14 +49,18 @@ public class ItemService {
         if (!existingItem.getOwner().getId().equals(userId)) {
             throw new ForbiddenException("Обновлять параметры вещи может только владелец");
         }
-
         itemMapper.merge(existingItem, item);
         return itemRepository.save(existingItem);
 
     }
 
-    public List<Item> findAll(Long userId) {
-        return itemRepository.findAllByOwner_Id(userId);
+    @SneakyThrows
+    public List<Item> findAll(Long userId, int from, int size) {
+        if (from < 0) throw new InvalidPageException("Ошибка!Страница не должна быть меньше нуля");
+        if (size <= 0) throw new InvalidSizeException("Ошибка!Размер должен быть положительным");
+
+        Pageable pageable = PageRequest.of(from / size, size);
+        return itemRepository.findAllByOwner_Id(userId, pageable);
     }
 
     public void delete(Long id) {
@@ -51,11 +68,20 @@ public class ItemService {
         itemRepository.deleteById(item.getId());
     }
 
-    public List<Item> searchItems(String text) {
+    @SneakyThrows
+    public List<Item> searchItems(String text, int from, int size) {
         if (text.isBlank()) {
             return Collections.emptyList();
         }
-        return itemRepository.search(text);
+        if (from < 0) throw new InvalidPageException("Ошибка!Страница не должна быть меньше нуля");
+        if (size <= 0) throw new InvalidSizeException("Ошибка!Размер должен быть положительным");
+
+        Pageable pageable = PageRequest.of(from, size);
+        return itemRepository.search(text, pageable);
     }
 
+    public List<Item> findByRequestId(Long requesterId) {
+        return itemRepository.findByRequestId(requesterId);
+    }
 }
+

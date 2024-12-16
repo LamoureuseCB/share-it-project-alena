@@ -3,8 +3,8 @@ package com.practice.shareitprojectalena.item;
 
 import com.practice.shareitprojectalena.booking.Booking;
 import com.practice.shareitprojectalena.item.comment.Comment;
+import com.practice.shareitprojectalena.request.entity.ItemRequest;
 import com.practice.shareitprojectalena.user.entity.User;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -37,4 +37,8 @@ public class Item {
     private List<Booking> bookings;
     @OneToMany(mappedBy = "item")
     private List<Comment> comments = new ArrayList<>();
+    private Long requestId;
+    @ManyToOne
+    @JoinColumn(name = "request_id")
+    private ItemRequest request;
 }

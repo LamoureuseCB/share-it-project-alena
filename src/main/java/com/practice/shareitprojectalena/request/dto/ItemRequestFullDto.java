@@ -1,7 +1,6 @@
-package com.practice.shareitprojectalena.request.entity;
+package com.practice.shareitprojectalena.request.dto;
 
 import com.practice.shareitprojectalena.item.Item;
-import com.practice.shareitprojectalena.user.entity.User;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -10,13 +9,12 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class ItemRequest {
+public class ItemRequestFullDto {
     private Long id;
     private String description;
-    private User requester;
+    private Long requesterId;
     private LocalDateTime created;
     private List<Item> items;
 }

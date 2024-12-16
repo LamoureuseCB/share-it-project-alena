@@ -7,13 +7,10 @@ import com.practice.shareitprojectalena.item.comment.CommentService;
 import com.practice.shareitprojectalena.item.comment.commentDto.CommentCreateDto;
 import com.practice.shareitprojectalena.item.comment.commentDto.CommentResponseDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemCreateDto;
-
 import com.practice.shareitprojectalena.item.itemDto.ItemResponseDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemUpdateDto;
-
-
-import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.user.UserService;
+import com.practice.shareitprojectalena.user.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,8 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
-import static com.practice.shareitprojectalena.utils.RequestConstants.*;
+import static com.practice.shareitprojectalena.utils.RequestConstants.USER_HEADER;
 
 
 @RestController
@@ -35,10 +31,13 @@ public class ItemController {
     private final CommentService commentService;
     private final CommentMapper commentMapper;
 
-    @PostMapping
+    @PostMapping("{/requestId}")
     @ResponseStatus(HttpStatus.CREATED)
-    public ItemResponseDto create(@RequestHeader(USER_HEADER) Long userId, @RequestBody @Valid ItemCreateDto itemCreateDto) {
+    public ItemResponseDto create(@RequestHeader(USER_HEADER) Long userId, @RequestBody @Valid ItemCreateDto itemCreateDto, @PathVariable(required = false) Long requestId) {
         Item item = itemMapper.fromCreate(itemCreateDto);
+        if (itemCreateDto.getRequestId() != null) {
+            item.setRequestId(itemCreateDto.getRequestId());
+        }
         Item createdItem = itemService.create(item, userId);
         return itemMapper.toResponse(createdItem);
     }
@@ -53,14 +52,18 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemResponseDto> findAll(@RequestHeader(USER_HEADER) Long userId) {
-        List<Item> items = itemService.findAll(userId);
+    public List<ItemResponseDto> findAll(@RequestHeader(USER_HEADER) Long userId,
+                                         @RequestParam(defaultValue = "0") int from,
+                                         @RequestParam(defaultValue = "10") int size) {
+        List<Item> items = itemService.findAll(userId, from, size);
         return itemMapper.toResponse(items);
     }
 
     @GetMapping("/search")
-    public List<ItemResponseDto> searchItems(@RequestParam(value = "text", required = false) String text) {
-        List<Item> items = itemService.searchItems(text);
+    public List<ItemResponseDto> searchItems(@RequestParam(value = "text", required = false) String text,
+                                             @RequestParam(defaultValue = "0") int from,
+                                             @RequestParam(defaultValue = "10") int size) {
+        List<Item> items = itemService.searchItems(text, from, size);
         return items.stream()
                 .map(itemMapper::toResponse)
                 .toList();
@@ -87,5 +90,4 @@ public class ItemController {
     }
 
 }
-
 

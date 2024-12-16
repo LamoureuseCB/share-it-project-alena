@@ -41,7 +41,6 @@ public class UserMapper {
                 .toList();
     }
 
-    @SuppressWarnings("checkstyle:Regexp")
     public void merge(User existing, User updated) {
         if (updated.getName() != null) {
             existing.setName(updated.getName());

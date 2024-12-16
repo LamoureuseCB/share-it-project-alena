@@ -82,17 +82,20 @@ public class BookingController {
     @GetMapping
     public List<BookingResponseDto> getBookingsByState(
             @RequestHeader(USER_HEADER) Long userId,
-            @RequestParam(defaultValue = "ALL") State state) {
-        List<Booking> bookings = bookingService.getBookingByBooker(state, userId);
+            @RequestParam(defaultValue = "ALL") State state,
+            @RequestParam(defaultValue = "0") int from,
+            @RequestParam(defaultValue = "10") int size
+            ) {
+        List<Booking> bookings = bookingService.getBookingByBooker(state, userId, from, size);
         return bookings.stream().map(bookingMapper::toResponse).toList();
     }
 
 
     @GetMapping("/owner/{ownerId}")
     public List<BookingResponseDto> findAllByOwnerIdAndState(@RequestHeader(USER_HEADER) Long userId,
-                                                     @PathVariable Long ownerId,
-                                                     @RequestParam(value = "state",
-                                                             defaultValue = "ALL") State state) {
+                                                             @PathVariable Long ownerId,
+                                                             @RequestParam(value = "state",
+                                                                     defaultValue = "ALL") State state) {
         if (!userId.equals(ownerId)) {
             throw new ConflictException("Вы не можете просматривать бронирования другого пользователя");
         }
@@ -105,8 +108,10 @@ public class BookingController {
     @GetMapping(value = "/owner")
     public List<BookingResponseDto> getBookingsByOwner(
             @RequestHeader(USER_HEADER) Long ownerId,
-            @RequestParam(defaultValue = "ALL") State state) {
-        List<Booking> bookings = bookingService.getBookingByBooker(state, ownerId);
+            @RequestParam(defaultValue = "ALL") State state,
+            @RequestParam(defaultValue = "0") int from,
+            @RequestParam(defaultValue = "10") int size) {
+        List<Booking> bookings = bookingService.getBookingByBooker(state, ownerId, from, size);
         return bookings.stream().map(bookingMapper::toResponse).toList();
     }
 }
