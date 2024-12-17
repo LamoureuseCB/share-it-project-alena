@@ -4,6 +4,9 @@ import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
 import com.practice.shareitprojectalena.error.exceptions.InvalidPageException;
 import com.practice.shareitprojectalena.error.exceptions.InvalidSizeException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
+//import com.practice.shareitprojectalena.request.ItemRequestRepository;
+import com.practice.shareitprojectalena.item.comment.Comment;
+import com.practice.shareitprojectalena.item.comment.CommentRepository;
 import com.practice.shareitprojectalena.request.ItemRequestRepository;
 import com.practice.shareitprojectalena.request.entity.ItemRequest;
 import com.practice.shareitprojectalena.user.UserRepository;
@@ -23,15 +26,16 @@ import java.util.List;
 public class ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
-    private final ItemRequestRepository itemRequestRepository;
+        private final ItemRequestRepository itemRequestRepository;
     private final ItemMapper itemMapper;
+    private final CommentRepository commentRepository;
 
     public Item create(Item item, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь по данному ID не найден"));
         item.setOwner(user);
-        if (item.getRequestId() != null) {
-            ItemRequest request = itemRequestRepository.findById(item.getRequestId())
+        if (item.getRequest() != null) {
+            ItemRequest request = itemRequestRepository.findById(item.getRequest().getId())
                     .orElseThrow(() -> new NotFoundException("Запрос не найден"));
             item.setRequest(request);
         }
@@ -83,5 +87,11 @@ public class ItemService {
     public List<Item> findByRequestId(Long requesterId) {
         return itemRepository.findByRequestId(requesterId);
     }
+
+//    public Item getItemWithComments(Long itemId) {
+//        Item item = findById(itemId);
+//        List<Comment> comments = item.getComments();
+//        return item;
+//    }
 }
 

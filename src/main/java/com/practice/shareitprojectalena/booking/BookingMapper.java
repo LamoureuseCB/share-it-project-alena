@@ -18,7 +18,9 @@ public class BookingMapper {
     private final UserMapper userMapper;
 
 
-    public Booking fromCreate(BookingCreateDto bookingCreateDto, Item item) {
+    public Booking fromCreate(BookingCreateDto bookingCreateDto) {
+        Item item = new Item();
+        item.setId(bookingCreateDto.getItemId());
         return Booking.builder()
                 .item(item)
                 .start(bookingCreateDto.getStart())

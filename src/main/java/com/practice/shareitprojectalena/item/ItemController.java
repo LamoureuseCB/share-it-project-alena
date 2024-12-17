@@ -31,13 +31,10 @@ public class ItemController {
     private final CommentService commentService;
     private final CommentMapper commentMapper;
 
-    @PostMapping("{/requestId}")
+    @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public ItemResponseDto create(@RequestHeader(USER_HEADER) Long userId, @RequestBody @Valid ItemCreateDto itemCreateDto, @PathVariable(required = false) Long requestId) {
+    public ItemResponseDto create(@RequestHeader(USER_HEADER) Long userId, @RequestBody @Valid ItemCreateDto itemCreateDto) {
         Item item = itemMapper.fromCreate(itemCreateDto);
-        if (itemCreateDto.getRequestId() != null) {
-            item.setRequestId(itemCreateDto.getRequestId());
-        }
         Item createdItem = itemService.create(item, userId);
         return itemMapper.toResponse(createdItem);
     }

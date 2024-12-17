@@ -3,34 +3,40 @@ package com.practice.shareitprojectalena.serviceTest;
 import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.item.Item;
+import com.practice.shareitprojectalena.item.ItemMapper;
 import com.practice.shareitprojectalena.item.ItemRepository;
 import com.practice.shareitprojectalena.item.ItemService;
-import com.practice.shareitprojectalena.request.ItemRequestRepository;
+//import com.practice.shareitprojectalena.request.ItemRequestRepository;
 import com.practice.shareitprojectalena.user.UserRepository;
 import com.practice.shareitprojectalena.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
-
+@ExtendWith(MockitoExtension.class)
 public class ItemServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private ItemRequestRepository itemRequestRepository;
+//    @Mock
+//    private ItemRequestRepository itemRequestRepository;
 
     @Mock
     private ItemRepository itemRepository;
 
     @InjectMocks
     private ItemService itemService;
+    @Spy
+    private ItemMapper itemMapper;
 
 
     private User user;
@@ -47,7 +53,8 @@ public class ItemServiceTest {
         item = new Item();
         item.setName("Test Item");
         item.setIsAvailable(true);
-        item.setRequestId(requestId);
+        item.setRequest();
+        item.setOwner(user);
     }
 
     @Test
@@ -80,8 +87,8 @@ public class ItemServiceTest {
     public void testCreateItemRequestNotFound() {
         when(userRepository.findById(userId))
                 .thenReturn(Optional.of(user));
-        when(itemRequestRepository.findById(requestId))
-                .thenReturn(Optional.empty());
+//        when(itemRequestRepository.findById(requestId))
+//                .thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
             itemService.create(item, userId);

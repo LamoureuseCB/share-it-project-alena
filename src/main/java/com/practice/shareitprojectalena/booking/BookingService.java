@@ -1,8 +1,11 @@
 package com.practice.shareitprojectalena.booking;
 
 import com.practice.shareitprojectalena.error.exceptions.ConflictException;
+import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
+import com.practice.shareitprojectalena.error.exceptions.ValidationException;
 import com.practice.shareitprojectalena.item.Item;
+import com.practice.shareitprojectalena.item.ItemRepository;
 import com.practice.shareitprojectalena.user.UserRepository;
 import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.utils.BookingStatus;
@@ -20,14 +23,20 @@ import java.util.Optional;
 @Service
 public class BookingService {
     private final BookingRepository bookingRepository;
+    private final ItemRepository itemRepository;
     private final UserRepository userRepository;
 
-    public Booking create(Booking booking, Long bookerId, Item item) {
-        if (!item.getIsAvailable()) {
-            throw new ConflictException(item.getName() + " недоступен для бронирования");
+    public Booking create(Booking booking, Long bookerId) {
+        Item item = itemRepository.findById(booking.getItem().getId()).orElseThrow(()-> new NotFoundException("Предмет не найден"));
+        if (item.getOwner().getId().equals(bookerId)) {
+            throw new ForbiddenException("Владелец не должен  бронировать свою вещь");
         }
         User booker = userRepository.findById(bookerId)
                 .orElseThrow(() -> new NotFoundException("Пользователь по данному ID не найден"));
+
+        if (!item.getIsAvailable()) {
+            throw new ValidationException("Предмет недоступен для бронирования");
+        }
         booking.setBooker(booker);
         booking.setItem(item);
         booking.setStatus(BookingStatus.WAITING);
@@ -40,7 +49,7 @@ public class BookingService {
 
         Long ownerId = existingBooking.getItem().getOwner().getId();
         if (!ownerId.equals(userId)) {
-            throw new NotFoundException("Обновить бронирование невозможно");
+            throw new ForbiddenException("Обновить бронирование невозможно");
         }
         if (approved) {
             existingBooking.setStatus(BookingStatus.APPROVED);

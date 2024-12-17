@@ -8,6 +8,7 @@ import com.practice.shareitprojectalena.user.entity.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.JoinFormula;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +38,23 @@ public class Item {
     private List<Booking> bookings;
     @OneToMany(mappedBy = "item")
     private List<Comment> comments = new ArrayList<>();
-    private Long requestId;
+    @ManyToOne
+    @JoinFormula(
+            "(select b.id from bookings b " +
+                    "where b.item_id = id " +
+                    "and b.start_date < localtimestamp(6) " +
+                    "and b.status = 'APPROVED' " +
+                    "order by b.start_date desc limit 1)")
+    private Booking lastBooking;
+    @ManyToOne
+    @JoinFormula(
+            "(select b.id from bookings b " +
+                    "where b.item_id = id " +
+                    "and b.start_date > localtimestamp(6) " +
+                    "and b.status = 'APPROVED' " +
+                    "order by b.start_date limit 1)")
+    private Booking nextBooking;
+
     @ManyToOne
     @JoinColumn(name = "request_id")
     private ItemRequest request;

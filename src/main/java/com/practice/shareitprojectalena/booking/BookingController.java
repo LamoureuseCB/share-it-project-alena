@@ -34,17 +34,8 @@ public class BookingController {
     public BookingResponseDto create(
             @RequestHeader(USER_HEADER) Long bookerId,
             @RequestBody @Valid BookingCreateDto bookingCreateDto) {
-        Item item = itemService.findById(bookingCreateDto.getItemId());
-        if (!item.getIsAvailable()) {
-            throw new ConflictException("Предмет недоступен для бронирования");
-        }
-        if (item.getOwner().getId().equals(bookerId)) {
-            throw new ConflictException("Владелец не должен  бронировать свою вещь");
-        }
-        User booker = userService.findById(bookerId);
-        Booking booking = bookingMapper.fromCreate(bookingCreateDto, item);
-        booking.setBooker(booker);
-        return bookingMapper.toResponse(bookingService.create(booking, bookerId, item));
+        Booking booking = bookingMapper.fromCreate(bookingCreateDto);
+        return bookingMapper.toResponse(bookingService.create(booking, bookerId));
     }
 
 
@@ -53,15 +44,6 @@ public class BookingController {
             @RequestHeader(USER_HEADER) Long ownerId,
             @PathVariable Long bookingId,
             @RequestParam boolean approved) {
-        Booking existingBooking = bookingService.findById(bookingId);
-        if (!existingBooking.getItem().getOwner().getId().equals(ownerId)) {
-            throw new ConflictException("Вы не можете изменять это бронирование, если Вы не владелец");
-        }
-        if (approved) {
-            existingBooking.setStatus(BookingStatus.APPROVED);
-        } else {
-            existingBooking.setStatus(BookingStatus.REJECTED);
-        }
         Booking updatingBooking = bookingService.update(bookingId, ownerId, approved);
         return bookingMapper.toResponse((updatingBooking));
 

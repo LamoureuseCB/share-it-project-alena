@@ -10,6 +10,7 @@ import com.practice.shareitprojectalena.item.itemDto.ItemCreateDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemResponseDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemUpdateDto;
 
+import com.practice.shareitprojectalena.request.entity.ItemRequest;
 import com.practice.shareitprojectalena.user.UserMapper;
 import com.practice.shareitprojectalena.utils.BookingStatus;
 import lombok.RequiredArgsConstructor;
@@ -23,14 +24,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ItemMapper {
     private final CommentMapper commentMapper;
-    private final BookingRepository bookingRepository;
     private final UserMapper userMapper;
 
     public Item fromCreate(ItemCreateDto itemCreateDto) {
+        ItemRequest itemRequest = new ItemRequest();
+        itemRequest.setId(itemCreateDto.getRequestId());
         return Item.builder()
                 .name(itemCreateDto.getName())
                 .description(itemCreateDto.getDescription())
                 .isAvailable(itemCreateDto.getAvailable())
+                .request(itemRequest.getId() != null ? itemRequest : null)
                 .build();
     }
 
@@ -69,21 +72,14 @@ public class ItemMapper {
     }
 
     public ItemResponseDto toResponseWithComments(Item item, List<Comment> comments) {
-        Booking booking = bookingRepository.findByItem_IdAndStatusIsAndStartIsBeforeOrderByStartDesc(item.getId(), BookingStatus.APPROVED, LocalDateTime.now().minusSeconds(4))
-                .stream()
-                .findFirst()
-                .orElse(null);
-
-
         return ItemResponseDto.builder()
                 .id(item.getId())
                 .name(item.getName())
                 .description(item.getDescription())
                 .available(item.getIsAvailable())
                 .comments(commentMapper.toResponse(comments))
-                .lastBooking(booking == null ? null : this.toResponse(booking))
+                .lastBooking(item.getLastBooking() != null ? this.toResponse(item.getLastBooking()) : null)
                 .build();
-
     }
 
     public BookingResponseDto toResponse(Booking booking) {
