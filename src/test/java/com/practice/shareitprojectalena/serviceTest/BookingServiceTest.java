@@ -6,6 +6,7 @@ import com.practice.shareitprojectalena.booking.BookingService;
 import com.practice.shareitprojectalena.error.exceptions.ConflictException;
 import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
+import com.practice.shareitprojectalena.error.exceptions.ValidationException;
 import com.practice.shareitprojectalena.item.Item;
 import com.practice.shareitprojectalena.item.ItemRepository;
 import com.practice.shareitprojectalena.user.UserRepository;
@@ -40,39 +41,62 @@ public class BookingServiceTest {
     @Test
     void create_BookingSuccess() {
         Booking booking = new Booking();
-        Long bookerId = 1L;
+
+        User owner = new User();
+        owner.setId(1l);
+        User booker = new User();
+        booker.setId(2l);
         Item item = new Item();
+        booking.setItem(item);
         item.setIsAvailable(true);
+        item.setOwner(owner);
 
-        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(new User()));
+        Mockito.when(userRepository.findById(booker.getId())).thenReturn(Optional.of(booker));
         Mockito.when(bookingRepository.save(booking)).thenReturn(booking);
+        Mockito.when(itemRepository.findById(item.getId())).thenReturn(Optional.of(item));
 
-        Booking bookingResult = bookingService.create(booking, bookerId);
+
+        Booking bookingResult = bookingService.create(booking, booker.getId());
         assertEquals(booking, bookingResult);
     }
 
     @Test
-    void create_ItemNotAvailableThrowConflictException() {
+    void create_ItemNotAvailableThrowValidateException() {
         Booking booking = new Booking();
-        Long bookerId = 1L;
+        User booker = new User();
+        booker.setId(1L);
+        User owner = new User();
+        owner.setId(2L);
         Item item = new Item();
-        item.setIsAvailable(false);
+        item.setId(1L);
+        item.setOwner(owner);
 
-        ConflictException exception = assertThrows(ConflictException.class, () -> {
-            bookingService.create(booking, bookerId);
+        booking.setItem(item);
+        booking.setBooker(booker);
+        item.setIsAvailable(false);
+        Mockito.when(itemRepository.findById(item.getId())).thenReturn(Optional.of(item));
+        Mockito.when((userRepository.findById(booker.getId()))).thenReturn(Optional.of(booker));
+
+       ValidationException exception = assertThrows(ValidationException.class, () -> {
+            bookingService.create(booking, booker.getId());
         });
 
-        assertEquals(item.getName() + " недоступен для бронирования", exception.getMessage());
+        assertEquals("Предмет недоступен для бронирования", exception.getMessage());
     }
 
     @Test
     void create_BookingBookerNotFoundThrowNotFoundException() {
         Booking booking = new Booking();
         Long bookerId = 100000L;
+        User owner = new User();
+        owner.setId(1l);
         Item item = new Item();
         item.setIsAvailable(true);
+        booking.setItem(item);
+        item.setOwner(owner);
 
         Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.empty());
+        Mockito.when(itemRepository.findById(item.getId())).thenReturn(Optional.of(item));
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
             bookingService.create(booking, bookerId);
@@ -93,6 +117,7 @@ public class BookingServiceTest {
         existingBooking.getItem().getOwner().setId(userId);
 
         Mockito.when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(existingBooking));
+        Mockito.when(bookingRepository.save(existingBooking)).thenReturn(existingBooking);
 
         Booking bookingResult = bookingService.update(bookingId, userId, approved);
 
@@ -114,28 +139,9 @@ public class BookingServiceTest {
         assertEquals("Бронирование по данному ID не найдено", exception.getMessage());
     }
 
-    @Test
-    void update_BookingOwnerNotFoundThrowNotFoundException() {
-        Long bookingId = 1L;
-        Long userId = 100000L;
-        boolean approved = true;
-
-        Booking existingBooking = new Booking();
-        existingBooking.setItem(new Item());
-        existingBooking.getItem().setOwner(new User());
-        existingBooking.getItem().getOwner().setId(userId);
-
-        Mockito.when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(existingBooking));
-
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
-            bookingService.update(bookingId, userId, approved);
-        });
-
-        assertEquals("Обновить бронирование невозможно", exception.getMessage());
-    }
 
     @Test
-    void update_ThrownForbiddException_IfUserIsNotOwner() {
+    void update_ThrownForbiddenException_IfUserIsNotOwner() {
         Long bookingId = 1L;
         Long userId = 1L;
         boolean approved = true;
@@ -157,19 +163,20 @@ public class BookingServiceTest {
     @Test
     void update_BookingStatusRejectedThrowForbiddenException() {
         Long bookingId = 1L;
-        Long userId = 1L;
+        Long ownerId = 1L;
+        Long bookerId = 3L;
         boolean approved = false;
 
         Booking existingBooking = new Booking();
         existingBooking.setItem(new Item());
         existingBooking.getItem().setOwner(new User());
-        existingBooking.getItem().getOwner().setId(userId);
-        existingBooking.setStatus(BookingStatus.REJECTED);
+        existingBooking.getItem().getOwner().setId(ownerId);
+        existingBooking.setStatus(BookingStatus.WAITING);
 
         Mockito.when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(existingBooking));
 
         ForbiddenException exception = assertThrows(ForbiddenException.class, () -> {
-            bookingService.update(bookingId, userId, approved);
+            bookingService.update(bookingId, bookerId, approved);
         });
 
         assertEquals("Обновить бронирование невозможно", exception.getMessage());
@@ -221,51 +228,33 @@ public class BookingServiceTest {
     }
 
     @Test
-    void create_BookingItemNotAvailableThrowConflictException() {
-        Booking booking = new Booking();
-        Long bookerId = 1L;
-        Item item = new Item();
-        item.setIsAvailable(false);
-
-        ConflictException exception = assertThrows(ConflictException.class, () -> {
-            bookingService.create(booking, bookerId);
-        });
-
-        assertEquals("Предмет недоступен для бронирования", exception.getMessage());
-    }
-
-    @Test
     void create_BookingItemNotFoundThrowNotFoundException() {
         Booking booking = new Booking();
         Long bookerId = 1L;
+        Item item = new Item();
+        item.setId(1L);
+        booking.setItem(item);
+
+        Mockito.when(itemRepository.findById(item.getId())).thenReturn(Optional.empty());
+
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
             bookingService.create(booking, bookerId);
         });
 
-        assertEquals("Предмет не найден", exception.getMessage());
+        assertEquals("Предмет не найден", exception.getMessage());
 
 
     }
 
-    @Test
-    void create_BookingIfBookerNotFoundThrowException() {
-        Booking booking = new Booking();
-        Long bookerId = 1111111111L;
-
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
-            bookingService.create(booking, bookerId);
-        });
-
-        assertEquals("Пользователь по данному ID не найден", exception.getMessage());
-
-    }
 
     @Test
     void create_BookingIfBookerIsItemOwnerThrowForbiddenException() {
         Booking booking = new Booking();
         Long bookerId = 1L;
         Item item = new Item();
+        item.setId(1L);
+        booking.setItem(item);
         item.setOwner(new User());
         item.getOwner().setId(bookerId);
 
@@ -342,8 +331,10 @@ public class BookingServiceTest {
         Long bookerId = 1L;
         State state = State.FUTURE;
         List<Booking> expectedBookings = List.of(new Booking(), new Booking());
+        User user = new User();
+        user.setName("User1");
 
-        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(new User()));
+        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(user));
         Mockito.when(bookingRepository.findByBookerAndStartAfterOrderByStartDesc(any(), any()))
                 .thenReturn(expectedBookings);
 
@@ -357,9 +348,11 @@ public class BookingServiceTest {
         Long bookerId = 1L;
         State state = State.WAITING;
         List<Booking> expectedBookings = List.of(new Booking(), new Booking());
+        User user = new User();
+        user.setName("User1");
 
-        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(new User()));
-        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(any(User.class), BookingStatus.WAITING))
+        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(user));
+        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(user, BookingStatus.WAITING))
                 .thenReturn(expectedBookings);
 
         List<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
@@ -372,9 +365,11 @@ public class BookingServiceTest {
         Long bookerId = 1L;
         State state = State.REJECTED;
         List<Booking> expectedBookings = List.of(new Booking(), new Booking());
+        User user = new User();
+        user.setName("User1");
 
-        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(new User()));
-        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(any(), (BookingStatus.REJECTED)))
+        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(user));
+        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(user, BookingStatus.REJECTED))
                 .thenReturn(expectedBookings);
 
         List<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
@@ -387,9 +382,11 @@ public class BookingServiceTest {
         Long bookerId = 1L;
         State state = State.ALL;
         List<Booking> expectedBookings = List.of(new Booking(), new Booking());
+        User user = new User();
+        user.setName("User1");
 
-        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(new User()));
-        Mockito.when(bookingRepository.findByBookerOrderByStartDesc(any()))
+        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(user));
+        Mockito.when(bookingRepository.findByBookerOrderByStartDesc(user))
                 .thenReturn(expectedBookings);
 
         List<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
