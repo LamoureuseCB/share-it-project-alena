@@ -45,8 +45,8 @@ public class ItemRepositoryTest {
         item = itemRepository.save(item);
         Pageable pageable = PageRequest.of(0, 10);
         List<Item> items = itemRepository.search("name", pageable);
-        Assertions.assertTrue(items.getFirst().getName().contains(item.getName()));
+        Assertions.assertTrue(items.get(0).getName().contains(item.getName()));
     }
 
-    }
 }
+

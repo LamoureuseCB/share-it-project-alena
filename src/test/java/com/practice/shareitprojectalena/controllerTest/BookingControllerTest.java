@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -212,7 +213,7 @@ public class BookingControllerTest {
         Mockito.when(bookingRepository.findByBookerAndStartBeforeAndEndAfterOrderByStartDesc(any(), any(), any()))
                 .thenReturn(expected);
 
-        MvcResult result = mockMvc.perform(get("/bookings")
+       mockMvc.perform(get("/bookings")
                         .header("USER_HEADER", bookerId)
                         .param("state", state.name())
                         .param("from", String.valueOf(from))

@@ -15,9 +15,10 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.nio.charset.StandardCharsets;
 
-import static org.springframework.mock.http.server.reactive.MockServerHttpRequest.patch;
-import static org.springframework.mock.http.server.reactive.MockServerHttpRequest.post;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -37,7 +38,7 @@ public class UserControllerTest {
                 .name("test")
                 .email("test@test.ru")
                 .build();
-        MvcResult mvcResult = mockMvc.perform(post("/users")
+        mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(userCreateDto)))
                 .andExpect(status().isCreated())
@@ -55,7 +56,7 @@ public class UserControllerTest {
                 .name("updated")
                 .email("updated@test.ru")
                 .build();
-        MvcResult mvcResult = mockMvc.perform(patch("/users/1")
+      mockMvc.perform(patch("/users/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(userUpdateDto)))
                 .andExpect(status().isOk())
@@ -69,7 +70,7 @@ public class UserControllerTest {
 
     @Test
     void getAllUsers() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(get("/users"))
+      mockMvc.perform(get("/users"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()", Matchers.equalTo(2)))
                 .andReturn()
@@ -79,7 +80,7 @@ public class UserControllerTest {
 
     @Test
     void getUserById_Exist() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(get("/users/1"))
+        mockMvc.perform(get("/users/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", Matchers.is(1)))
                 .andReturn()
@@ -90,7 +91,7 @@ public class UserControllerTest {
 
     @Test
     void getUserById_NonExist() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(get("/users/999999"))
+        mockMvc.perform(get("/users/999999"))
                 .andExpect(status().isNotFound())
                 .andReturn()
                 .getResponse()

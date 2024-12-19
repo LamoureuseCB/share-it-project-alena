@@ -359,7 +359,7 @@ public class BookingServiceTest {
         List<Booking> expectedBookings = List.of(new Booking(), new Booking());
 
         Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(new User()));
-        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(any(), (BookingStatus.WAITING)))
+        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(any(User.class), BookingStatus.WAITING))
                 .thenReturn(expectedBookings);
 
         List<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
