@@ -7,7 +7,6 @@ import com.practice.shareitprojectalena.item.itemDto.ItemUpdateDto;
 import jakarta.transaction.Transactional;
 import lombok.SneakyThrows;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -36,10 +35,6 @@ public class ItemControllerTest {
     private ItemCreateDto itemCreateDto;
     private Long userId = 1L;
 
-    @BeforeEach
-    public void setUp() {
-
-    }
 
     @Test
     @SneakyThrows
@@ -194,4 +189,5 @@ public class ItemControllerTest {
                 .getResponse()
                 .getContentAsString(StandardCharsets.UTF_8);
     }
+
 }

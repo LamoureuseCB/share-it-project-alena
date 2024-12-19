@@ -20,7 +20,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
     @Mock
@@ -49,22 +48,22 @@ public class UserServiceTest {
 
     @Test
     void testCreateUserSuccess() {
-        when(userRepository.findByEmail(user.getEmail()))
+        Mockito.when(userRepository.findByEmail(user.getEmail()))
                 .thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenReturn(user);
+        Mockito.when(userRepository.save(any(User.class))).thenReturn(user);
         User createdUser = userService.create(user);
         assertEquals("Test User", createdUser.getName());
     }
 
     @Test
     void testCreateUserConflict() {
-        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        Mockito.when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         assertThrows(ConflictException.class, () -> userService.create(user));
     }
 
     @Test
     void testFindByIdSuccess() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        Mockito.when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         User foundUser = userService.findById(1L);
         assertEquals("Test User", foundUser.getName());
     }

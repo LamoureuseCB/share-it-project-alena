@@ -33,17 +33,19 @@ public class ItemRequestService {
 
     public ItemRequestDto create(Long userId, ItemRequestCreateDto itemRequestCreateDto) {
         User user = userService.findById(userId);
-        ItemRequest itemRequest = new ItemRequest();
-        if (itemRequestCreateDto.getDescription() == null || itemRequestCreateDto.getDescription().isEmpty()) {
-            throw new ValidationException("Ошибка валидации: описание должно быть заполнено");
+
+        if (itemRequestCreateDto.getDescription().isBlank()) {
+            throw new ValidationException("Описание должно быть заполнено");
         }
 
+        ItemRequest itemRequest = new ItemRequest();
         itemRequest.setDescription(itemRequestCreateDto.getDescription());
         itemRequest.setRequester(user);
         itemRequest.setCreated(LocalDateTime.now());
         itemRequest = itemRequestRepository.save(itemRequest);
         return itemRequestMapper.toItemRequestDto(itemRequest);
     }
+
 
 
     public List<ItemRequestFullDto> getAllRequestsByUserId(Long userId) {

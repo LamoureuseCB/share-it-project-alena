@@ -27,7 +27,7 @@ public class BookingService {
     private final UserRepository userRepository;
 
     public Booking create(Booking booking, Long bookerId) {
-        Item item = itemRepository.findById(booking.getItem().getId()).orElseThrow(()-> new NotFoundException("Предмет не найден"));
+        Item item = itemRepository.findById(booking.getItem().getId()).orElseThrow(() -> new NotFoundException("Предмет не найден"));
         if (item.getOwner().getId().equals(bookerId)) {
             throw new ForbiddenException("Владелец не должен  бронировать свою вещь");
         }
