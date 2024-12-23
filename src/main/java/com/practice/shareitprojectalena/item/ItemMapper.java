@@ -2,29 +2,27 @@ package com.practice.shareitprojectalena.item;
 
 
 import com.practice.shareitprojectalena.booking.Booking;
-import com.practice.shareitprojectalena.booking.BookingRepository;
 import com.practice.shareitprojectalena.booking.dto.BookingResponseDto;
 import com.practice.shareitprojectalena.item.comment.Comment;
 import com.practice.shareitprojectalena.item.comment.CommentMapper;
 import com.practice.shareitprojectalena.item.itemDto.ItemCreateDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemResponseDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemUpdateDto;
-
 import com.practice.shareitprojectalena.request.entity.ItemRequest;
 import com.practice.shareitprojectalena.user.UserMapper;
-import com.practice.shareitprojectalena.utils.BookingStatus;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
-
 @Component
-@RequiredArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
+
 public class ItemMapper {
-    private final CommentMapper commentMapper;
-    private final UserMapper userMapper;
+    private CommentMapper commentMapper;
+    private UserMapper userMapper;
 
     public Item fromCreate(ItemCreateDto itemCreateDto) {
         ItemRequest itemRequest = new ItemRequest();
@@ -46,16 +44,28 @@ public class ItemMapper {
     }
 
     public void merge(Item existingItem, Item updatedItem) {
+        boolean isUpdated = false;
+
         if (updatedItem.getName() != null && !updatedItem.getName().isBlank()) {
             existingItem.setName(updatedItem.getName());
+            isUpdated = true;
         }
+
         if (updatedItem.getDescription() != null && !updatedItem.getDescription().isBlank()) {
             existingItem.setDescription(updatedItem.getDescription());
+            isUpdated = true;
         }
+
         if (updatedItem.getIsAvailable() != null) {
             existingItem.setIsAvailable(updatedItem.getIsAvailable());
+            isUpdated = true;
+        }
+
+        if (isUpdated) {
+            System.out.println("Объект был обновлён: " + existingItem.getName());
         }
     }
+
 
 
     public ItemResponseDto toResponse(Item item) {

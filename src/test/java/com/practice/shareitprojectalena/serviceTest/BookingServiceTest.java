@@ -3,7 +3,6 @@ package com.practice.shareitprojectalena.serviceTest;
 import com.practice.shareitprojectalena.booking.Booking;
 import com.practice.shareitprojectalena.booking.BookingRepository;
 import com.practice.shareitprojectalena.booking.BookingService;
-import com.practice.shareitprojectalena.error.exceptions.ConflictException;
 import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.error.exceptions.ValidationException;

@@ -5,11 +5,13 @@ import com.practice.shareitprojectalena.item.itemDto.ItemResponseDto;
 import com.practice.shareitprojectalena.user.dto.UserResponseDto;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Builder
+@Setter
 public class BookingResponseDto {
     private Long id;
     private Long itemId;

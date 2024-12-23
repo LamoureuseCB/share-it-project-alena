@@ -1,22 +1,14 @@
 package com.practice.shareitprojectalena.booking;
 
-import com.practice.shareitprojectalena.utils.BookingStatus;
 import com.practice.shareitprojectalena.booking.dto.BookingCreateDto;
 import com.practice.shareitprojectalena.booking.dto.BookingResponseDto;
 import com.practice.shareitprojectalena.error.exceptions.ConflictException;
-import com.practice.shareitprojectalena.item.Item;
-import com.practice.shareitprojectalena.item.ItemService;
-import com.practice.shareitprojectalena.user.entity.User;
-import com.practice.shareitprojectalena.user.UserService;
 import com.practice.shareitprojectalena.utils.State;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.web.bind.annotation.*;
 
-
 import java.util.List;
-
 
 import static com.practice.shareitprojectalena.utils.RequestConstants.USER_HEADER;
 
@@ -26,8 +18,7 @@ import static com.practice.shareitprojectalena.utils.RequestConstants.USER_HEADE
 public class BookingController {
     private final BookingMapper bookingMapper;
     private final BookingService bookingService;
-    private final UserService userService;
-    private final ItemService itemService;
+
 
 
     @PostMapping

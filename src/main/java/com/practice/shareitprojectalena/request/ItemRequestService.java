@@ -33,7 +33,9 @@ public class ItemRequestService {
 
     public ItemRequestDto create(Long userId, ItemRequestCreateDto itemRequestCreateDto) {
         User user = userService.findById(userId);
-
+        if (user == null) {
+            throw new NotFoundException("Объект не найден");
+        }
         if (itemRequestCreateDto.getDescription().isBlank()) {
             throw new ValidationException("Описание должно быть заполнено");
         }
@@ -49,6 +51,10 @@ public class ItemRequestService {
 
 
     public List<ItemRequestFullDto> getAllRequestsByUserId(Long userId) {
+        User user = userService.findById(userId);
+        if (user == null) {
+            throw new NotFoundException("Объект не найден");
+        }
         List<ItemRequest> itemRequests = itemRequestRepository.findAllByRequesterIdOrderByCreatedDesc(userId, Sort.by(Sort.Direction.DESC, "created"));
         List<ItemRequestFullDto> itemRequestFullDtoList = new ArrayList<>();
 

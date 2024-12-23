@@ -10,6 +10,7 @@ import com.practice.shareitprojectalena.request.ItemRequestRepository;
 import com.practice.shareitprojectalena.request.entity.ItemRequest;
 import com.practice.shareitprojectalena.user.UserRepository;
 import com.practice.shareitprojectalena.user.entity.User;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,27 +35,25 @@ public class ItemServiceTest {
     @Mock
     private ItemRequestRepository itemRequestRepository;
 
-    @InjectMocks
-    private ItemService itemService;
     @Spy
     private ItemMapper itemMapper;
-
+    @InjectMocks
+    private ItemService itemService;
 
     private User user;
     private Item item;
-    private final Long userId = 1L;
+    private Long userId = 1L;
     private final Long requestId = 2L;
 
     @BeforeEach
     public void setUp() {
         user = new User();
         user.setId(userId);
-        user.setName("Test User");
+        user.setName("Иван");
 
         item = new Item();
-        item.setName("Test Item");
+        item.setName("Дрель");
         item.setIsAvailable(true);
-        item.setOwner(user);
     }
 
     @Test
@@ -82,21 +81,26 @@ public class ItemServiceTest {
 
         assertEquals("Пользователь по данному ID не найден", exception.getMessage());
     }
-
     @Test
+    @SneakyThrows
     public void testCreateItemRequestNotFound() {
-        Mockito.when(userRepository.findById(userId))
-                .thenReturn(Optional.of(user));
-        Mockito.when(itemRequestRepository.findById(requestId))
-                .thenReturn(Optional.empty());
+        User user = new User();
+        user.setId(userId);
+        Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
+        ItemRequest itemRequest = new ItemRequest();
+        itemRequest.setId(requestId);
+        Item item = new Item();
+        item.setRequest(itemRequest);
+        Mockito.when(itemRequestRepository.findById(requestId)).thenReturn(Optional.empty());
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
             itemService.create(item, userId);
         });
-
         assertEquals("Запрос не найден", exception.getMessage());
-
     }
+
+
+
 
     @Test
     public void testFindByIdSuccess() {
@@ -117,7 +121,7 @@ public class ItemServiceTest {
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
             itemService.findById(1L);
         });
-        assertEquals("Вещь для проката по данному ID не найдена", exception.getMessage());
+        assertEquals("Объект не найден", exception.getMessage());
     }
 
     @Test
@@ -128,35 +132,30 @@ public class ItemServiceTest {
     }
 
     @Test
+    @SneakyThrows
     public void testUpdateItemSuccess() {
         Item updatedItem = new Item();
         updatedItem.setName("Обновленная вещь");
         updatedItem.setIsAvailable(false);
 
-        Mockito.when(itemRepository.findById(1L))
-                .thenReturn(Optional.of(item));
-        Mockito.when(itemRepository.save(any(Item.class)))
-                .thenReturn(updatedItem);
+        User owner = new User();
+        owner.setId(2L);
+        userId = 2L;
+
+
+        Item item = new Item();
+        item.setId(1L);
+        item.setOwner(owner);
+
+        Mockito.when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        Mockito.when(itemRepository.save(any(Item.class))).thenReturn(updatedItem);
         Item result = itemService.update(updatedItem, 1L, userId);
+
         assertNotNull(result);
         assertEquals("Обновленная вещь", result.getName());
         assertFalse(result.getIsAvailable());
     }
 
-    @Test
-    public void testFailUpdateItemByAnotherUserForbidden() {
-        Item updatedItem = new Item();
-        updatedItem.setName("Обновленная вещь");
-
-        Mockito.when(itemRepository.findById(1L))
-                .thenReturn(Optional.of(item));
-        Mockito.when(item.getOwner().getId()).thenReturn(2L);
-
-        ForbiddenException exception = assertThrows(ForbiddenException.class, () -> {
-            itemService.update(updatedItem, 1L, userId);
-        });
-        assertEquals("Обновлять параметры вещи может только владелец", exception.getMessage());
-    }
 
     @Test
     void CreateItemWithExistingUserAndRequest() {
@@ -210,29 +209,51 @@ public class ItemServiceTest {
 
     @Test
     void update_ItemSuccess() {
+        User owner = new User();
+        owner.setId(2L);
+        Item existingItem = new Item();
+        existingItem.setId(1L);
+        existingItem.setOwner(owner);
+        existingItem.setName("Старая вещь");
+        existingItem.setIsAvailable(true);
         Item updatedItem = new Item();
-        updatedItem.setName("обновленная вещь");
+        updatedItem.setName("Обновленная вещь");
+        updatedItem.setIsAvailable(false);
 
         Mockito.when(itemRepository.findById(1L))
-                .thenReturn(Optional.of(item));
-        Mockito.when(item.getOwner().getId()).thenReturn(userId);
+                .thenReturn(Optional.of(existingItem));
+        Mockito.when(itemRepository.save(existingItem)).thenReturn(existingItem);
 
-        Item updated = itemService.update(updatedItem, 1L, userId);
+
+        Item updated = itemService.update(updatedItem, 1L, 2L);
+
+
+
 
         assertEquals(updatedItem.getName(), updated.getName());
+        assertEquals(updatedItem.getIsAvailable(), updated.getIsAvailable());
+
     }
 
+
+
+
     @Test
-    void update_ItemForbidden() {
+    @SneakyThrows
+    public void failUpdateByAnotherUser_ShouldThrowForbiddenException() {
         Item updatedItem = new Item();
-        updatedItem.setName("обновленная вещь");
+        updatedItem.setName("Обновленная вещь");
 
-        Mockito.when(itemRepository.findById(1L))
-                .thenReturn(Optional.of(item));
-        Mockito.when(item.getOwner().getId()).thenReturn(2L);
+        User owner = new User();
+        owner.setId(5L);
+        Item item = new Item();
+        item.setId(1L);
+        item.setOwner(owner);
+        Long notOwnerId = 1000L;
 
+        Mockito.when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         ForbiddenException exception = assertThrows(ForbiddenException.class, () -> {
-            itemService.update(updatedItem, 1L, userId);
+            itemService.update(updatedItem, 1L, notOwnerId);
         });
 
         assertEquals("Обновлять параметры вещи может только владелец", exception.getMessage());
@@ -252,6 +273,8 @@ public class ItemServiceTest {
 
     @Test
     void delete_NotFound() {
+        Item notExistItem = new Item();
+        item.setId(1L);
         Mockito.when(itemRepository.findById(1L))
                 .thenReturn(Optional.empty());
 

@@ -4,8 +4,6 @@ import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
 import com.practice.shareitprojectalena.error.exceptions.InvalidPageException;
 import com.practice.shareitprojectalena.error.exceptions.InvalidSizeException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
-//import com.practice.shareitprojectalena.request.ItemRequestRepository;
-import com.practice.shareitprojectalena.item.comment.Comment;
 import com.practice.shareitprojectalena.item.comment.CommentRepository;
 import com.practice.shareitprojectalena.request.ItemRequestRepository;
 import com.practice.shareitprojectalena.request.entity.ItemRequest;
@@ -45,18 +43,21 @@ public class ItemService {
 
 
     public Item findById(Long id) {
-        return itemRepository.findById(id).orElseThrow(() -> new NotFoundException("Вещь для проката по данному ID не найдена"));
+        return itemRepository.findById(id).orElseThrow(() -> new NotFoundException("Объект не найден"));
     }
 
     public Item update(Item item, Long itemId, Long userId) {
         Item existingItem = findById(itemId);
+        if (existingItem == null) {
+            throw new NotFoundException("Вещь для проката по данному ID не найдена");
+        }
         if (!existingItem.getOwner().getId().equals(userId)) {
             throw new ForbiddenException("Обновлять параметры вещи может только владелец");
         }
         itemMapper.merge(existingItem, item);
         return itemRepository.save(existingItem);
-
     }
+
 
     @SneakyThrows
     public List<Item> findAll(Long userId, int from, int size) {

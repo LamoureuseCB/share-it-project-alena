@@ -66,16 +66,16 @@ public class ItemRequestServiceTest {
 
     @Test
     public void create_ThrowExceptionWhenDescriptionIsEmpty() {
-        ItemRequestCreateDto emptyDescription = new ItemRequestCreateDto("");
+        itemRequestCreateDto.setDescription("");
 
         Mockito.when(userService.findById(1L))
                 .thenReturn(user);
         Exception exception = assertThrows(ValidationException.class,
                 () -> {
-                    itemRequestService.create(1L, emptyDescription);
+                    itemRequestService.create(1L, itemRequestCreateDto);
                 });
 
-        assertEquals("Ошибка валидации: описание должно быть заполнено", exception.getMessage());
+        assertEquals("Описание должно быть заполнено", exception.getMessage());
     }
 
 
@@ -96,11 +96,10 @@ public class ItemRequestServiceTest {
     }
 
     @Test
-    public void create_ThrowUserNotFoundExceptionWhenUserDoesNotExist() {
-        Mockito.when(userService.findById(1L))
-                .thenReturn(null);
+    public void create_ThrowUserNotFoundException_WhenUserDoesNotExist() {
+        Mockito.when(userService.findById(1L)).thenReturn(null);
 
-        Exception exception = assertThrows(NotFoundException.class,
+        NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> {
                     itemRequestService.create(1L, itemRequestCreateDto);
                 });

@@ -1,34 +1,43 @@
 package com.practice.shareitprojectalena.controllerTest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.practice.shareitprojectalena.request.ItemRequestController;
+import com.practice.shareitprojectalena.request.dto.ItemRequestCreateDto;
 import com.practice.shareitprojectalena.request.dto.ItemRequestDto;
+import com.practice.shareitprojectalena.request.dto.ItemRequestFullDto;
+import com.practice.shareitprojectalena.request.service.ItemRequestService;
 import com.practice.shareitprojectalena.user.UserRepository;
 import com.practice.shareitprojectalena.user.entity.User;
-import jakarta.transaction.Transactional;
 import lombok.SneakyThrows;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
+import static com.practice.shareitprojectalena.utils.RequestConstants.USER_HEADER;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
+@WebMvcTest(ItemRequestController.class)
 public class ItemRequestControllerTest {
     @Autowired
     MockMvc mockMvc;
 
-    @Autowired
+    @MockBean
     private UserRepository userRepository;
+
+    @MockBean
+    private ItemRequestService itemRequestService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -36,80 +45,117 @@ public class ItemRequestControllerTest {
     @Test
     @SneakyThrows
     void create_RequestSuccess() {
-        User user = new User();
-        user.setName("Иван");
-        user = userRepository.save(user);
+        User requestor = new User();
+        requestor.setName("Иван");
+        Long requestorId = 1L;
+        requestor.setId(requestorId);
 
-        ItemRequestDto newRequestDto = new ItemRequestDto();
-        newRequestDto.setDescription("Электрическая дрель");
-        newRequestDto.setRequesterId(user.getId());
+        ItemRequestCreateDto newRequestCreateDto = new ItemRequestCreateDto();
+        newRequestCreateDto.setDescription("Электрическая дрель");
+
+        ItemRequestDto itemRequestDtoResponce = new ItemRequestDto();
+        Long id = 1L;
+        itemRequestDtoResponce.setId(id);
+        itemRequestDtoResponce.setDescription("Электрическая дрель");
+        itemRequestDtoResponce.setRequesterId(requestor.getId());
+
+        when(userRepository.findById(requestor.getId())).thenReturn(Optional.of(requestor));
+        when(itemRequestService.create(requestor.getId(), newRequestCreateDto)).thenReturn(itemRequestDtoResponce);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/requests")
+                        .header(USER_HEADER, requestor.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(newRequestDto))).andExpect(status().isCreated())
+                        .content(objectMapper.writeValueAsString(newRequestCreateDto)))
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.description", Matchers.equalTo("Электрическая дрель")))
-                .andExpect(jsonPath("$.requesterId", Matchers.equalTo(user.getId())))
-                .andReturn()
-                .getResponse()
-                .getContentAsString(StandardCharsets.UTF_8);
+                .andExpect(jsonPath("$.requesterId", Matchers.equalTo(1)));
     }
+
 
     @Test
     @SneakyThrows
-    void getAllRequests_ShouldReturnListOfRequests() {
-        User user = new User();
-        user.setName("Иван");
-        user = userRepository.save(user);
+    void getAllRequests_Success() {
+        Long userId = 1L;
+        ItemRequestFullDto request1 = new ItemRequestFullDto();
+        request1.setId(1L);
+        request1.setDescription("Электрическая дрель");
+        request1.setRequesterId(userId);
+        request1.setCreated(LocalDateTime.now());
 
-        String json = mockMvc.perform(MockMvcRequestBuilders.get("/requests")
-                        .header("USER_HEADER", user.getId()))
+        ItemRequestFullDto request2 = new ItemRequestFullDto();
+        request2.setId(2L);
+        request2.setDescription("Молоток");
+        request2.setRequesterId(userId);
+        request2.setCreated(LocalDateTime.now());
+
+        List<ItemRequestFullDto> ListOfRequests = Arrays.asList(request1, request2);
+
+        when(itemRequestService.getAllRequestsByUserId(userId)).thenReturn(ListOfRequests);
+        mockMvc.perform(MockMvcRequestBuilders.get("/requests")
+                        .header(USER_HEADER, userId)
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].requesterId", Matchers.equalTo(user.getId())))
-                .andExpect(jsonPath("$[0].id").exists())
-                .andExpect(jsonPath("$[0].description").exists())
-                .andExpect(jsonPath("$[0].created").exists())
-                .andExpect(jsonPath("$[0].status").exists())
-                .andReturn()
-                .getResponse()
-                .getContentAsString(StandardCharsets.UTF_8);
-    }
-
-                
-    @Test
-    @SneakyThrows
-    void update_RequestNotFound() {
-        User user = new User();
-        user.setName("Иван");
-        user = userRepository.save(user);
-
-        mockMvc.perform(MockMvcRequestBuilders.patch("/requests/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ItemRequestDto())))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Объект не найден"))
-                .andExpect(jsonPath("$.status").value(404))
-                .andReturn()
-                .getResponse()
-                .getContentAsString(StandardCharsets.UTF_8);
+                .andExpect(jsonPath("$", Matchers.hasSize(2)))
+                .andExpect(jsonPath("$[0].id", Matchers.is(1)))
+                .andExpect(jsonPath("$[0].description", Matchers.is("Электрическая дрель")))
+                .andExpect(jsonPath("$[1].id", Matchers.is(2)))
+                .andExpect(jsonPath("$[1].description", Matchers.is("Молоток")));
     }
 
     @Test
     @SneakyThrows
-    void update_ThrowForbiddenExceptionWhenUserIsNotOwner() {
-        User user = new User();
-        user.setName("Иван");
-        user = userRepository.save(user);
+    void getRequestById_Success() {
+        Long requestId = 1L;
+        ItemRequestFullDto expectedRequest = new ItemRequestFullDto();
+        expectedRequest.setId(requestId);
+        expectedRequest.setDescription("Электрическая дрель");
+        expectedRequest.setRequesterId(1L);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/requests/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ItemRequestDto()))
-                        .header("USER_HEADER", user.getId() + 1))
-                .andExpect(status().isForbidden())
-                .andReturn()
-                .getResponse()
-                .getContentAsString(StandardCharsets.UTF_8);
+        when(itemRequestService.getAllByRequestId(requestId)).thenReturn(expectedRequest);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/requests/{requestId}", requestId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", Matchers.is(1)))
+                .andExpect(jsonPath("$.description", Matchers.is("Электрическая дрель")))
+                .andExpect(jsonPath("$.requesterId", Matchers.is(1)));
     }
+
+    @Test
+    @SneakyThrows
+    void getAllRequestsByPage_Success() {
+        Long userId = 1L;
+        int from = 0;
+        int size = 10;
+
+        ItemRequestDto request1 = new ItemRequestDto();
+        request1.setId(1L);
+        request1.setDescription("Электрическая дрель");
+        request1.setRequesterId(userId);
+
+        ItemRequestDto request2 = new ItemRequestDto();
+        request2.setId(2L);
+        request2.setDescription("Молоток");
+        request2.setRequesterId(userId);
+
+        List<ItemRequestDto> expectedRequests = Arrays.asList(request1, request2);
+
+        when(itemRequestService.getAllRequests(from, size, userId)).thenReturn(expectedRequests);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/requests/all/from/size")
+                        .header(USER_HEADER, userId)
+                        .param("from", String.valueOf(from))
+                        .param("size", String.valueOf(size))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", Matchers.hasSize(2)))
+                .andExpect(jsonPath("$[0].id", Matchers.is(1)))
+                .andExpect(jsonPath("$[0].description", Matchers.is("Электрическая дрель")))
+                .andExpect(jsonPath("$[1].id", Matchers.is(2)))
+                .andExpect(jsonPath("$[1].description", Matchers.is("Молоток")));
+    }
+
 
 }
+

@@ -36,10 +36,9 @@ public class UserController {
     @GetMapping
     public List<UserResponseDto> findAll() {
         List<User> users = userService.findAll();
-        return users.stream()
-                .map(userMapper::toResponse)
-                .toList();
+        return userMapper.toResponse(users);
     }
+
 
     @PatchMapping("/{id}")
     public UserResponseDto update(@PathVariable Long id, @Valid @RequestBody UserUpdateDto userUpdateDto) {
