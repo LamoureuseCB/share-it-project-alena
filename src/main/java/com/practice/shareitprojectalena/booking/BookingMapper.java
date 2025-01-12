@@ -30,6 +30,8 @@ public class BookingMapper {
     }
 
 
+
+
     public Booking fromUpdate(BookingCreateDto bookingCreateDto, Item item, User booker) {
         return Booking.builder()
                 .item(item)

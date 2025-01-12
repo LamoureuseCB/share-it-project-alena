@@ -1,6 +1,8 @@
 package com.practice.shareitprojectalena.serviceTest;
 
 import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
+import com.practice.shareitprojectalena.error.exceptions.InvalidPageException;
+import com.practice.shareitprojectalena.error.exceptions.InvalidSizeException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.item.Item;
 import com.practice.shareitprojectalena.item.ItemMapper;
@@ -16,14 +18,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class ItemServiceTest {
@@ -58,9 +62,9 @@ public class ItemServiceTest {
 
     @Test
     public void testCreateItemSuccess() {
-        Mockito.when(userRepository.findById(userId))
+        when(userRepository.findById(userId))
                 .thenReturn(Optional.of(user));
-        Mockito.when(itemRepository.save(any(Item.class)))
+        when(itemRepository.save(any(Item.class)))
                 .thenReturn(item);
 
         Item createdItem = itemService.create(item, userId);
@@ -72,7 +76,7 @@ public class ItemServiceTest {
 
     @Test
     public void testCreateItemUserNotFound() {
-        Mockito.when(userRepository.findById(userId))
+        when(userRepository.findById(userId))
                 .thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
@@ -86,13 +90,13 @@ public class ItemServiceTest {
     public void testCreateItemRequestNotFound() {
         User user = new User();
         user.setId(userId);
-        Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         ItemRequest itemRequest = new ItemRequest();
         itemRequest.setId(requestId);
         Item item = new Item();
         item.setRequest(itemRequest);
-        Mockito.when(itemRequestRepository.findById(requestId)).thenReturn(Optional.empty());
+        when(itemRequestRepository.findById(requestId)).thenReturn(Optional.empty());
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
             itemService.create(item, userId);
         });
@@ -104,7 +108,7 @@ public class ItemServiceTest {
 
     @Test
     public void testFindByIdSuccess() {
-        Mockito.when(itemRepository.findById(1L))
+        when(itemRepository.findById(1L))
                 .thenReturn(Optional.of(item));
 
         Item foundItem = itemService.findById(1L);
@@ -116,7 +120,7 @@ public class ItemServiceTest {
 
     @Test
     public void testFindByIdShouldThrowNotFound() {
-        Mockito.when(itemRepository.findById(1L))
+        when(itemRepository.findById(1L))
                 .thenReturn(Optional.empty());
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
             itemService.findById(1L);
@@ -126,7 +130,7 @@ public class ItemServiceTest {
 
     @Test
     public void testDeleteItem() {
-        Mockito.when(itemRepository.findById(1L))
+        when(itemRepository.findById(1L))
                 .thenReturn(Optional.of(item));
         itemService.delete(1L);
     }
@@ -147,8 +151,8 @@ public class ItemServiceTest {
         item.setId(1L);
         item.setOwner(owner);
 
-        Mockito.when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
-        Mockito.when(itemRepository.save(any(Item.class))).thenReturn(updatedItem);
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        when(itemRepository.save(any(Item.class))).thenReturn(updatedItem);
         Item result = itemService.update(updatedItem, 1L, userId);
 
         assertNotNull(result);
@@ -163,11 +167,11 @@ public class ItemServiceTest {
         item.setRequest(new ItemRequest());
         item.getRequest().setId(1L);
 
-        Mockito.when(userRepository.findById(userId))
+        when(userRepository.findById(userId))
                 .thenReturn(Optional.of(user));
-        Mockito.when(itemRequestRepository.findById(1L))
+        when(itemRequestRepository.findById(1L))
                 .thenReturn(Optional.of(item.getRequest()));
-        Mockito.when(itemRepository.save(any(Item.class)))
+        when(itemRepository.save(any(Item.class)))
                 .thenReturn(item);
 
         Item createdItem = itemService.create(item, userId);
@@ -179,7 +183,7 @@ public class ItemServiceTest {
 
     @Test
     void create_ItemUserNotFound() {
-        Mockito.when(userRepository.findById(userId))
+        when(userRepository.findById(userId))
                 .thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
@@ -195,9 +199,9 @@ public class ItemServiceTest {
         item.setRequest(new ItemRequest());
         item.getRequest().setId(1L);
 
-        Mockito.when(userRepository.findById(userId))
+        when(userRepository.findById(userId))
                 .thenReturn(Optional.of(user));
-        Mockito.when(itemRequestRepository.findById(1L))
+        when(itemRequestRepository.findById(1L))
                 .thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
@@ -220,9 +224,9 @@ public class ItemServiceTest {
         updatedItem.setName("Обновленная вещь");
         updatedItem.setIsAvailable(false);
 
-        Mockito.when(itemRepository.findById(1L))
+        when(itemRepository.findById(1L))
                 .thenReturn(Optional.of(existingItem));
-        Mockito.when(itemRepository.save(existingItem)).thenReturn(existingItem);
+        when(itemRepository.save(existingItem)).thenReturn(existingItem);
 
 
         Item updated = itemService.update(updatedItem, 1L, 2L);
@@ -251,7 +255,7 @@ public class ItemServiceTest {
         item.setOwner(owner);
         Long notOwnerId = 1000L;
 
-        Mockito.when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         ForbiddenException exception = assertThrows(ForbiddenException.class, () -> {
             itemService.update(updatedItem, 1L, notOwnerId);
         });
@@ -259,30 +263,135 @@ public class ItemServiceTest {
         assertEquals("Обновлять параметры вещи может только владелец", exception.getMessage());
     }
 
-
     @Test
-    void delete_ItemSuccess() {
-        Item item = new Item();
-        item.setId(1L);
+    void findAll_NegativeFrom_ThrowsInvalidPageException() {
 
-        Mockito.when(itemRepository.findById(1L))
-                .thenReturn(Optional.of(item));
+        Long userId = 1L;
+        int from = -1;
+        int size = 10;
 
-        itemService.delete(1L);
-    }
-
-    @Test
-    void delete_NotFound() {
-        Item notExistItem = new Item();
-        item.setId(1L);
-        Mockito.when(itemRepository.findById(1L))
-                .thenReturn(Optional.empty());
-
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
-            itemService.delete(1L);
+        InvalidPageException exception = assertThrows(InvalidPageException.class, () -> {
+            itemService.findAll(userId, from, size);
         });
-
-        assertEquals("Объект не найден", exception.getMessage());
+        assertEquals("Ошибка!Страница не должна быть меньше нуля", exception.getMessage());
     }
-}
+
+    @Test
+    void findAll_NonPositiveSize_ThrowsInvalidSizeException() {
+
+        Long userId = 1L;
+        int from = 0;
+        int size = 0;
+
+        InvalidSizeException exception = assertThrows(InvalidSizeException.class, () -> {
+            itemService.findAll(userId, from, size);
+        });
+        assertEquals("Ошибка!Размер должен быть положительным", exception.getMessage());
+    }
+
+    @Test
+    void findAll_ValidParameters_ReturnsItemList() {
+
+        Long userId = 1L;
+        int from = 0;
+        int size = 10;
+
+        Item item1 = new Item();
+        Item item2 = new Item();
+
+        when(itemRepository.findAllByOwner_Id(userId, PageRequest.of(from / size, size)))
+                .thenReturn(List.of(item1, item2));
+
+
+        List<Item> result = itemService.findAll(userId, from, size);
+
+
+        assertEquals(2, result.size(), "Expected to find two items");
+        assertTrue(result.contains(item1));
+        assertTrue(result.contains(item2));
+    }
+
+
+        @Test
+        void delete_ItemSuccess () {
+            Item item = new Item();
+            item.setId(1L);
+
+            when(itemRepository.findById(1L))
+                    .thenReturn(Optional.of(item));
+
+            itemService.delete(1L);
+        }
+
+        @Test
+        void delete_NotFound () {
+            Item notExistItem = new Item();
+            item.setId(1L);
+            when(itemRepository.findById(1L))
+                    .thenReturn(Optional.empty());
+
+            NotFoundException exception = assertThrows(NotFoundException.class, () -> {
+                itemService.delete(1L);
+            });
+
+            assertEquals("Объект не найден", exception.getMessage());
+        }
+
+        @Test
+        void searchItems_EmptyText_ReturnsEmptyList () {
+            String text = "";
+            int from = 0;
+            int size = 10;
+
+            List<Item> result = itemService.searchItems(text, from, size);
+
+            assertTrue(result.isEmpty(), "");
+        }
+
+        @Test
+        void searchItems_NegativeFrom_ThrowsInvalidPageException () {
+            String text = "item";
+            int from = -1;
+            int size = 10;
+
+            InvalidPageException exception = assertThrows(InvalidPageException.class, () -> {
+                itemService.searchItems(text, from, size);
+            });
+            assertEquals("Ошибка!Страница не должна быть меньше нуля", exception.getMessage());
+        }
+
+        @Test
+        void searchItems_NonPositiveSize_ThrowsInvalidSizeException () {
+            String text = "item";
+            int from = 0;
+            int size = 0;
+
+            InvalidSizeException exception = assertThrows(InvalidSizeException.class, () -> {
+                itemService.searchItems(text, from, size);
+            });
+            assertEquals("Ошибка!Размер должен быть положительным", exception.getMessage());
+        }
+
+        @Test
+        void searchItems_ValidParameters_ReturnsItemList () {
+
+            String text = "item";
+            int from = 0;
+            int size = 10;
+
+            Item item1 = new Item();
+            Item item2 = new Item();
+
+            when(itemRepository.search(text, PageRequest.of(from, size)))
+                    .thenReturn(List.of(item1, item2));
+
+            List<Item> result = itemService.searchItems(text, from, size);
+
+            assertEquals(2, result.size(), "Ожидается 2 предмета");
+            assertTrue(result.contains(item1));
+            assertTrue(result.contains(item2));
+        }
+    }
+
+
 

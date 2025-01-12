@@ -11,15 +11,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
     @Mock
@@ -48,29 +50,29 @@ public class UserServiceTest {
 
     @Test
     void testCreateUserSuccess() {
-        Mockito.when(userRepository.findByEmail(user.getEmail()))
+        when(userRepository.findByEmail(user.getEmail()))
                 .thenReturn(Optional.empty());
-        Mockito.when(userRepository.save(any(User.class))).thenReturn(user);
+        when(userRepository.save(any(User.class))).thenReturn(user);
         User createdUser = userService.create(user);
         assertEquals("Test User", createdUser.getName());
     }
 
     @Test
     void testCreateUserConflict() {
-        Mockito.when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         assertThrows(ConflictException.class, () -> userService.create(user));
     }
 
     @Test
     void testFindByIdSuccess() {
-        Mockito.when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         User foundUser = userService.findById(1L);
         assertEquals("Test User", foundUser.getName());
     }
 
     @Test
     void testFindByIdNotSuccess() {
-        Mockito.when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> userService.findById(1L));
     }
 
@@ -80,23 +82,69 @@ public class UserServiceTest {
         updatedUser.setId(1L);
         updatedUser.setEmail("test@test.com");
         updatedUser.setName("Updated User");
-        Mockito.when(userRepository.findByEmail(updatedUser.getEmail())).thenReturn(Optional.of(updatedUser));
-        Mockito.when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        Mockito.when(userRepository.save(any(User.class))).thenReturn(updatedUser);
+        when(userRepository.findByEmail(updatedUser.getEmail())).thenReturn(Optional.of(updatedUser));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenReturn(updatedUser);
 
         User result = userService.update(updatedUser, 1L);
         assertEquals("Updated User", result.getName());
     }
 
     @Test
+    void update_emailExistsThrowsxception() {
+        Long userId = 1L;
+        String existingEmail = "existing@ex.com";
+
+        User updatedUser = new User();
+        updatedUser.setEmail(existingEmail);
+
+        User existingUserWithSameEmail = new User();
+        existingUserWithSameEmail.setId(2L);
+        existingUserWithSameEmail.setEmail(existingEmail);
+
+        when(userRepository.findByEmail(existingEmail)).thenReturn(Optional.of(existingUserWithSameEmail));
+
+        ConflictException exception = assertThrows(ConflictException.class, () -> userService.update(updatedUser, userId));
+
+        assertEquals("Пользователь с данной электронной почтой уже существует", exception.getMessage());
+ }
+    @Test
+    void findAll_ReturnsListOfUsers() {
+        User user1 = new User();
+        user1.setId(1L);
+        user1.setName("User1");
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setName("User2");
+        List<User> expectedUsers = List.of(user1, user2);
+
+        when(userRepository.findAll()).thenReturn(expectedUsers);
+
+        List<User> actualUsers = userService.findAll();
+
+        assertEquals(expectedUsers.size(), actualUsers.size());
+        assertEquals(expectedUsers, actualUsers); }
+
+    @Test
+    void findAll_returnsEmptyListUsersNotExist() {
+        List<User> expectedUsers = Collections.emptyList();
+
+        when(userRepository.findAll()).thenReturn(expectedUsers);
+        List<User> actualUsers = userService.findAll();
+
+        assertTrue(actualUsers.isEmpty());
+        assertEquals(expectedUsers, actualUsers);
+    }
+
+    @Test
     void testDeleteUserSuccess() {
-        Mockito.when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         userService.delete(1L);
     }
 
     @Test
     public void testDeleteUserNotFound() {
-        Mockito.when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> userService.delete(1L));
     }
 }

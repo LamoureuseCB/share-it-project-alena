@@ -3,9 +3,13 @@ package com.practice.shareitprojectalena.booking;
 import com.practice.shareitprojectalena.booking.dto.BookingCreateDto;
 import com.practice.shareitprojectalena.booking.dto.BookingResponseDto;
 import com.practice.shareitprojectalena.error.exceptions.ConflictException;
+import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
+import com.practice.shareitprojectalena.item.ItemRepository;
 import com.practice.shareitprojectalena.utils.State;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,15 +22,23 @@ import static com.practice.shareitprojectalena.utils.RequestConstants.USER_HEADE
 public class BookingController {
     private final BookingMapper bookingMapper;
     private final BookingService bookingService;
-
+    private final ItemRepository itemRepository;
 
 
     @PostMapping
     public BookingResponseDto create(
             @RequestHeader(USER_HEADER) Long bookerId,
             @RequestBody @Valid BookingCreateDto bookingCreateDto) {
-        Booking booking = bookingMapper.fromCreate(bookingCreateDto);
-        return bookingMapper.toResponse(bookingService.create(booking, bookerId));
+        System.out.println("Получен запрос на создание бронирования: " + bookingCreateDto);
+        try {
+            Booking booking = bookingMapper.fromCreate(bookingCreateDto);
+            Booking createdBooking = bookingService.create(booking, bookerId);
+            System.out.println("Бронирование успешно создано: " + createdBooking);
+            return bookingMapper.toResponse(createdBooking);
+        } catch (NotFoundException exception) {
+            System.err.println("Ошибка: " + exception.getMessage());
+            throw exception;
+        }
     }
 
 
@@ -58,25 +70,27 @@ public class BookingController {
             @RequestParam(defaultValue = "ALL") State state,
             @RequestParam(defaultValue = "0") int from,
             @RequestParam(defaultValue = "10") int size
-            ) {
-        List<Booking> bookings = bookingService.getBookingByBooker(state, userId, from, size);
+    ) {
+        Page<Booking> bookings = bookingService.getBookingByBooker(state, userId, from, size);
         return bookings.stream().map(bookingMapper::toResponse).toList();
     }
 
 
     @GetMapping("/owner/{ownerId}")
-    public List<BookingResponseDto> findAllByOwnerIdAndState(@RequestHeader(USER_HEADER) Long userId,
+    public Page<BookingResponseDto> findAllByOwnerIdAndState(@RequestHeader(USER_HEADER) Long userId,
                                                              @PathVariable Long ownerId,
-                                                             @RequestParam(value = "state",
-                                                                     defaultValue = "ALL") State state) {
+                                                             @RequestParam(value = "state", defaultValue = "ALL") State state,
+                                                             Pageable pageable) {
         if (!userId.equals(ownerId)) {
             throw new ConflictException("Вы не можете просматривать бронирования другого пользователя");
         }
-        List<Booking> bookings = bookingService.getByStateAndOwner(state, ownerId);
 
-        return bookings.stream().map(bookingMapper::toResponse).toList();
+        Page<Booking> bookings = bookingService.getByStateAndOwner(state, ownerId, pageable);
 
+
+        return bookings.map(bookingMapper::toResponse);
     }
+
 
     @GetMapping(value = "/owner")
     public List<BookingResponseDto> getBookingsByOwner(
@@ -84,7 +98,7 @@ public class BookingController {
             @RequestParam(defaultValue = "ALL") State state,
             @RequestParam(defaultValue = "0") int from,
             @RequestParam(defaultValue = "10") int size) {
-        List<Booking> bookings = bookingService.getBookingByBooker(state, ownerId, from, size);
+        Page<Booking> bookings = bookingService.getBookingByBooker(state, ownerId, from, size);
         return bookings.stream().map(bookingMapper::toResponse).toList();
     }
 }

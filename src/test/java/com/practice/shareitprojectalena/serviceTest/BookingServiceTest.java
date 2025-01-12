@@ -12,19 +12,25 @@ import com.practice.shareitprojectalena.user.UserRepository;
 import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.utils.BookingStatus;
 import com.practice.shareitprojectalena.utils.State;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
 public class BookingServiceTest {
@@ -42,9 +48,9 @@ public class BookingServiceTest {
         Booking booking = new Booking();
 
         User owner = new User();
-        owner.setId(1l);
+        owner.setId(1L);
         User booker = new User();
-        booker.setId(2l);
+        booker.setId(2L);
         Item item = new Item();
         booking.setItem(item);
         item.setIsAvailable(true);
@@ -88,7 +94,7 @@ public class BookingServiceTest {
         Booking booking = new Booking();
         Long bookerId = 100000L;
         User owner = new User();
-        owner.setId(1l);
+        owner.setId(1L);
         Item item = new Item();
         item.setIsAvailable(true);
         booking.setItem(item);
@@ -131,9 +137,7 @@ public class BookingServiceTest {
 
         Mockito.when(bookingRepository.findById(bookingId)).thenReturn(Optional.empty());
 
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
-            bookingService.update(bookingId, userId, approved);
-        });
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> bookingService.update(bookingId, userId, approved));
 
         assertEquals("Бронирование по данному ID не найдено", exception.getMessage());
     }
@@ -152,9 +156,7 @@ public class BookingServiceTest {
 
         Mockito.when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(existingBooking));
 
-        ForbiddenException exception = assertThrows(ForbiddenException.class, () -> {
-            bookingService.update(bookingId, userId, approved);
-        });
+        ForbiddenException exception = assertThrows(ForbiddenException.class, () -> bookingService.update(bookingId, userId, approved));
 
         assertEquals("Обновить бронирование невозможно", exception.getMessage());
     }
@@ -174,9 +176,7 @@ public class BookingServiceTest {
 
         Mockito.when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(existingBooking));
 
-        ForbiddenException exception = assertThrows(ForbiddenException.class, () -> {
-            bookingService.update(bookingId, bookerId, approved);
-        });
+        ForbiddenException exception = assertThrows(ForbiddenException.class, () -> bookingService.update(bookingId, bookerId, approved));
 
         assertEquals("Обновить бронирование невозможно", exception.getMessage());
     }
@@ -195,19 +195,37 @@ public class BookingServiceTest {
         bookingService.deleteById(bookingId);
         bookingRepository.deleteById(bookingId);
     }
-
     @Test
     void getByStateAndOwner_ReturnsBookingsByStateAndOwnerId() {
         User owner = new User();
         owner.setId(1L);
         Mockito.when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
 
-        List<Booking> expected = List.of(new Booking(), new Booking());
-        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStartAfterOrderByStartDesc(any(), any())).thenReturn(expected);
+        Booking booking1 = new Booking();
+        booking1.setId(1L);
+        booking1.setStart(LocalDateTime.now().plusDays(1));
+        booking1.setEnd(LocalDateTime.now().plusDays(2));
 
-        List<Booking> result = bookingService.getByStateAndOwner(State.FUTURE, 1L);
-        assertEquals(expected, result);
+        Booking booking2 = new Booking();
+        booking2.setId(2L);
+        booking2.setStart(LocalDateTime.now().plusDays(3));
+        booking2.setEnd(LocalDateTime.now().plusDays(4));
+
+        List<Booking> expected = List.of(booking1, booking2);
+
+        Pageable pageable = PageRequest.of(0, 10);
+        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStartAfterOrderByStartDesc(eq(owner), any(), eq(pageable)))
+                .thenReturn(new PageImpl<>(expected, pageable, expected.size()));
+
+        Page<Booking> result = bookingService.getByStateAndOwner(State.FUTURE, 1L, pageable);
+
+
+        assertNotNull(result);
+        assertEquals(expected.size(), result.getTotalElements());
+        assertEquals(expected, result.getContent());
     }
+
+
 
 
     @Test
@@ -217,14 +235,33 @@ public class BookingServiceTest {
         int from = 0;
         int size = 10;
 
-        List<Booking> expected = List.of(new Booking(), new Booking());
-        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(new User()));
-        Mockito.when(bookingRepository.findByBookerAndStartBeforeAndEndAfterOrderByStartDesc(any(), any(), any()))
-                .thenReturn(expected);
+        Booking booking1 = new Booking();
+        booking1.setId(1L);
+        booking1.setStart(LocalDateTime.now().minusDays(1));
+        booking1.setEnd(LocalDateTime.now().plusDays(1));
 
-        List<Booking> result = bookingService.getBookingByBooker(state, bookerId, from, size);
-        assertEquals(expected, result);
+        Booking booking2 = new Booking();
+        booking2.setId(2L);
+        booking2.setStart(LocalDateTime.now().minusDays(2));
+        booking2.setEnd(LocalDateTime.now().plusDays(2));
+
+        List<Booking> expected = List.of(booking1, booking2);
+
+        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(new User()));
+
+        Pageable pageable = PageRequest.of(from / size, size);
+        Page<Booking> expectedPage = new PageImpl<>(expected, pageable, expected.size());
+
+        Mockito.when(bookingRepository.findByBookerAndStartBeforeAndEndAfterOrderByStartDesc(any(), any(),any(), any()))
+                .thenReturn(expectedPage);
+
+        Page<Booking> result = bookingService.getBookingByBooker(state, bookerId, from, size);
+
+        assertNotNull(result);
+        assertEquals(expected.size(), result.getTotalElements());
+        assertEquals(expected, result.getContent());
     }
+
 
     @Test
     void create_BookingItemNotFoundThrowNotFoundException() {
@@ -237,9 +274,7 @@ public class BookingServiceTest {
         Mockito.when(itemRepository.findById(item.getId())).thenReturn(Optional.empty());
 
 
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
-            bookingService.create(booking, bookerId);
-        });
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> bookingService.create(booking, bookerId));
 
         assertEquals("Предмет не найден", exception.getMessage());
 
@@ -260,9 +295,7 @@ public class BookingServiceTest {
         Mockito.when(itemRepository.findById(booking.getItem().getId()))
                 .thenReturn(Optional.of(item));
 
-        ForbiddenException exception = assertThrows(ForbiddenException.class, () -> {
-            bookingService.create(booking, bookerId);
-        });
+        ForbiddenException exception = assertThrows(ForbiddenException.class, () -> bookingService.create(booking, bookerId));
 
         assertEquals("Владелец не должен  бронировать свою вещь", exception.getMessage());
 
@@ -275,9 +308,7 @@ public class BookingServiceTest {
 
         Mockito.when(bookingRepository.findById(bookingId)).thenReturn(Optional.empty());
 
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
-            bookingService.findById(bookingId);
-        });
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> bookingService.findById(bookingId));
 
         assertEquals("Бронирование по данному ID не найдено", exception.getMessage());
     }
@@ -295,103 +326,208 @@ public class BookingServiceTest {
         assertEquals(expectedBooking, result);
     }
 
+
     @Test
     void getByStateAndOwner_BookingsFoundSuccess() {
         Long ownerId = 1L;
         State state = State.PAST;
-        List<Booking> expectedBookings = List.of(new Booking(), new Booking());
+
+        Booking booking1 = new Booking();
+        booking1.setId(1L);
+        booking1.setEnd(LocalDateTime.now().minusDays(1));
+
+        Booking booking2 = new Booking();
+        booking2.setId(2L);
+        booking2.setEnd(LocalDateTime.now().minusDays(2));
+
+        List<Booking> expectedBookings = List.of(booking1, booking2);
 
         Mockito.when(userRepository.findById(ownerId)).thenReturn(Optional.of(new User()));
-        Mockito.when(bookingRepository.findBookingsByItemOwnerAndEndBeforeOrderByStartDesc(any(), any()))
-                .thenReturn(expectedBookings);
 
-        List<Booking> result = bookingService.getByStateAndOwner(state, ownerId);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Booking> expectedPage = new PageImpl<>(expectedBookings, pageable, expectedBookings.size());
 
-        assertEquals(expectedBookings, result);
+        Mockito.when(bookingRepository.findBookingsByItemOwnerAndEndBeforeOrderByStartDesc(any(), any(), any()))
+                .thenReturn(expectedPage);
+
+        Page<Booking> result = bookingService.getByStateAndOwner(state, ownerId, pageable);
+        assertNotNull(result);
+        assertEquals(expectedBookings.size(), result.getTotalElements());
+        assertEquals(expectedBookings, result.getContent());
     }
 
+
     @Test
+    @SneakyThrows
     void getBookingByBooker_BookingsFoundSuccess() {
         Long bookerId = 1L;
-        State state = State.PAST;
-        List<Booking> expectedBookings = List.of(new Booking(), new Booking());
+        State state = State.FUTURE;
+        int from = 0;
+        int size = 10;
 
-        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(new User()));
-        Mockito.when(bookingRepository.findByBookerAndEndBeforeOrderByStartDesc(any(), any()))
-                .thenReturn(expectedBookings);
+        Booking booking1 = new Booking();
+        booking1.setId(1L);
+        booking1.setStart(LocalDateTime.now().plusDays(1));
+        booking1.setEnd(LocalDateTime.now().plusDays(2));
 
-        List<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
+        Booking booking2 = new Booking();
+        booking2.setId(2L);
+        booking2.setStart(LocalDateTime.now().plusDays(3));
+        booking2.setEnd(LocalDateTime.now().plusDays(4));
 
-        assertEquals(expectedBookings, result);
+        List<Booking> expectedBookings = List.of(booking1, booking2);
+
+        User user = new User();
+        user.setId(bookerId);
+
+        Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(user));
+
+        Pageable pageable = PageRequest.of(from / size, size);
+        Page<Booking> expectedPage = new PageImpl<>(expectedBookings, pageable, expectedBookings.size());
+
+        Mockito.when(bookingRepository.findByBookerAndStartAfterOrderByStartDesc(eq(user), any(), eq(pageable)))
+                .thenReturn(expectedPage);
+
+        Page<Booking> result = bookingService.getBookingByBooker(state, bookerId, from, size);
+
+        assertNotNull(result);
+        assertEquals(expectedBookings.size(), result.getTotalElements());
+        assertIterableEquals(expectedBookings, result.getContent());
     }
 
     @Test
     void getBookingByBooker_FutureBookingsFoundSuccess() {
         Long bookerId = 1L;
         State state = State.FUTURE;
-        List<Booking> expectedBookings = List.of(new Booking(), new Booking());
+
+
+        Booking booking1 = new Booking();
+        booking1.setId(1L);
+        booking1.setStart(LocalDateTime.now().plusDays(1));
+        booking1.setEnd(LocalDateTime.now().plusDays(2));
+
+        Booking booking2 = new Booking();
+        booking2.setId(2L);
+        booking2.setStart(LocalDateTime.now().plusDays(3));
+        booking2.setEnd(LocalDateTime.now().plusDays(4));
+        List<Booking> expectedBookings = List.of(booking1, booking2);
         User user = new User();
+        user.setId(bookerId);
         user.setName("User1");
 
+
         Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(user));
-        Mockito.when(bookingRepository.findByBookerAndStartAfterOrderByStartDesc(any(), any()))
-                .thenReturn(expectedBookings);
 
-        List<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Booking> expectedPage = new PageImpl<>(expectedBookings, pageable, expectedBookings.size());
+        Mockito.when(bookingRepository.findByBookerAndStartAfterOrderByStartDesc(eq(user), any(), eq(pageable)))
+                .thenReturn(expectedPage);
 
-        assertEquals(expectedBookings, result);
+        Page<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
+        assertNotNull(result);
+        assertEquals(expectedBookings.size(), result.getTotalElements());
+        assertEquals(expectedBookings, result.getContent());
     }
+
+
 
     @Test
     void getBookingByBooker_WaitingBookingsFoundSuccess() {
         Long bookerId = 1L;
         State state = State.WAITING;
-        List<Booking> expectedBookings = List.of(new Booking(), new Booking());
+
+        Booking booking1 = new Booking();
+        booking1.setId(1L);
+        booking1.setStatus(BookingStatus.WAITING);
+
+        Booking booking2 = new Booking();
+        booking2.setId(2L);
+        booking2.setStatus(BookingStatus.WAITING);
+
+        List<Booking> expectedBookings = List.of(booking1, booking2);
         User user = new User();
+        user.setId(bookerId);
         user.setName("User1");
 
         Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(user));
-        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(user, BookingStatus.WAITING))
-                .thenReturn(expectedBookings);
 
-        List<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Booking> expectedPage = new PageImpl<>(expectedBookings, pageable, expectedBookings.size());
 
-        assertEquals(expectedBookings, result);
+        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(eq(user), eq(BookingStatus.WAITING), eq(pageable)))
+                .thenReturn(expectedPage);
+
+        Page<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
+
+        assertNotNull(result);
+        assertEquals(expectedBookings.size(), result.getTotalElements());
+        assertEquals(expectedBookings, result.getContent());
     }
 
     @Test
     void getBookingByBooker_RejectedBookingsFoundSuccess() {
         Long bookerId = 1L;
         State state = State.REJECTED;
-        List<Booking> expectedBookings = List.of(new Booking(), new Booking());
+
+        Booking booking1 = new Booking();
+        booking1.setId(1L);
+        booking1.setStatus(BookingStatus.REJECTED);
+
+        Booking booking2 = new Booking();
+        booking2.setId(2L);
+        booking2.setStatus(BookingStatus.REJECTED);
+
+        List<Booking> expectedBookings = List.of(booking1, booking2);
         User user = new User();
+        user.setId(bookerId);
         user.setName("User1");
 
         Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(user));
-        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(user, BookingStatus.REJECTED))
-                .thenReturn(expectedBookings);
 
-        List<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Booking> expectedPage = new PageImpl<>(expectedBookings, pageable, expectedBookings.size());
 
-        assertEquals(expectedBookings, result);
+        Mockito.when(bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(eq(user), eq(BookingStatus.REJECTED), eq(pageable)))
+                .thenReturn(expectedPage);
+
+        Page<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
+
+        assertNotNull(result);
+        assertEquals(expectedBookings.size(), result.getTotalElements());
+        assertEquals(expectedBookings, result.getContent());
     }
 
     @Test
     void getBookingByBooker_DefaultBookingsFoundSuccess() {
         Long bookerId = 1L;
         State state = State.ALL;
-        List<Booking> expectedBookings = List.of(new Booking(), new Booking());
+
+        Booking booking1 = new Booking();
+        booking1.setId(1L);
+
+        Booking booking2 = new Booking();
+        booking2.setId(2L);
+
+        List<Booking> expectedBookings = List.of(booking1, booking2);
         User user = new User();
+        user.setId(bookerId);
         user.setName("User1");
 
         Mockito.when(userRepository.findById(bookerId)).thenReturn(Optional.of(user));
-        Mockito.when(bookingRepository.findByBookerOrderByStartDesc(user))
-                .thenReturn(expectedBookings);
 
-        List<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Booking> expectedPage = new PageImpl<>(expectedBookings, pageable, expectedBookings.size());
 
-        assertEquals(expectedBookings, result);
+        Mockito.when(bookingRepository.findByBookerOrderByStartDesc(eq(user), eq(pageable)))
+                .thenReturn(expectedPage);
+
+        Page<Booking> result = bookingService.getBookingByBooker(state, bookerId, 0, 10);
+
+        assertNotNull(result);
+        assertEquals(expectedBookings.size(), result.getTotalElements());
+        assertEquals(expectedBookings, result.getContent());
     }
+
 
 }
 

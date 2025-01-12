@@ -11,10 +11,11 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-@SuppressWarnings("checkstyle:Regexp")
+
 @Getter
 @Setter
 @Builder
+@EqualsAndHashCode
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity

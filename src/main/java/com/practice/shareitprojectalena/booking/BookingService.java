@@ -11,6 +11,7 @@ import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.utils.BookingStatus;
 import com.practice.shareitprojectalena.utils.State;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,7 @@ public class BookingService {
         booking.setBooker(booker);
         booking.setItem(item);
         booking.setStatus(BookingStatus.WAITING);
+        System.out.println("Создаю бронирование: " + booking);
         return bookingRepository.save(booking);
     }
 
@@ -76,50 +78,49 @@ public class BookingService {
     }
 
 
-    public List<Booking> getByStateAndOwner(State state, Long ownerId) {
-        List<Booking> bookings;
+    public Page<Booking> getByStateAndOwner(State state, Long ownerId, Pageable pageable) {
         Optional<User> owner = userRepository.findById(ownerId);
         if (owner.isEmpty()) {
             throw new ConflictException("Владелец с данным id не найден " + ownerId);
         }
+
         switch (state) {
-            case PAST ->
-                    bookings = bookingRepository.findBookingsByItemOwnerAndEndBeforeOrderByStartDesc(owner.get(), LocalDateTime.now());
-            case CURRENT ->
-                    bookings = bookingRepository.findBookingsByItemOwnerAndStartBeforeAndEndAfterOrderByStartDesc(owner.get(), LocalDateTime.now(), LocalDateTime.now());
-            case FUTURE ->
-                    bookings = bookingRepository.findBookingsByItemOwnerAndStartAfterOrderByStartDesc(owner.get(), LocalDateTime.now());
-            case WAITING ->
-                    bookings = bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(owner.get(), BookingStatus.WAITING);
-            case REJECTED ->
-                    bookings = bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(owner.get(), BookingStatus.REJECTED);
-            default -> bookings = bookingRepository.findBookingsByItemOwnerOrderByStartDesc(owner.get());
+            case PAST:
+                return bookingRepository.findBookingsByItemOwnerAndEndBeforeOrderByStartDesc(owner.get(), LocalDateTime.now(), pageable);
+            case CURRENT:
+                return bookingRepository.findBookingsByItemOwnerAndStartBeforeAndEndAfterOrderByStartDesc(owner.get(), LocalDateTime.now(), LocalDateTime.now(), pageable);
+            case FUTURE:
+                return bookingRepository.findBookingsByItemOwnerAndStartAfterOrderByStartDesc(owner.get(), LocalDateTime.now(), pageable);
+            case WAITING:
+                return bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(owner.get(), BookingStatus.WAITING, pageable);
+            case REJECTED:
+                return bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(owner.get(), BookingStatus.REJECTED, pageable);
+            default:
+                return bookingRepository.findBookingsByItemOwnerOrderByStartDesc(owner.get(), pageable);
         }
-        return bookings;
     }
 
-    public List<Booking> getBookingByBooker(State state, Long bookerId, int from, int size) {
-        User owner = userRepository.findById(bookerId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
-        List<Booking> bookingsByOwner;
-        switch (state) {
-            case PAST ->
-                bookingsByOwner =  bookingRepository.findByBookerAndEndBeforeOrderByStartDesc(owner, LocalDateTime.now());
-            case CURRENT ->
-                    bookingsByOwner =  bookingRepository.findByBookerAndStartBeforeAndEndAfterOrderByStartDesc(owner, LocalDateTime.now(), LocalDateTime.now());
-            case FUTURE ->
-            bookingsByOwner =  bookingRepository.findByBookerAndStartAfterOrderByStartDesc(owner, LocalDateTime.now());
-            case WAITING ->
-                    bookingsByOwner =  bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(owner, BookingStatus.WAITING);
-            case REJECTED ->
-                    bookingsByOwner =  bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(owner, BookingStatus.REJECTED);
-            default ->
-                    bookingsByOwner =  bookingRepository.findByBookerOrderByStartDesc(owner);
-        }
+    public Page<Booking> getBookingByBooker(State state, Long bookerId, int from, int size) {
+        User booker = userRepository.findById(bookerId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+
         Pageable pageable = PageRequest.of(from / size, size);
-        return bookingsByOwner.stream()
-                .skip(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .toList();
+        switch (state) {
+            case PAST:
+                return bookingRepository.findByBookerAndEndBeforeOrderByStartDesc(booker, LocalDateTime.now(), pageable);
+            case CURRENT:
+                return bookingRepository.findByBookerAndStartBeforeAndEndAfterOrderByStartDesc(booker, LocalDateTime.now(), LocalDateTime.now(), pageable);
+            case FUTURE:
+                return bookingRepository.findByBookerAndStartAfterOrderByStartDesc(booker, LocalDateTime.now(), pageable);
+            case WAITING:
+                return bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(booker, BookingStatus.WAITING, pageable);
+            case REJECTED:
+                return bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(booker, BookingStatus.REJECTED, pageable);
+            default:
+                return bookingRepository.findByBookerOrderByStartDesc(booker, pageable);
+        }
     }
+
+
+
+
 }
