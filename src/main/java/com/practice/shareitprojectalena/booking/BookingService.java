@@ -28,22 +28,32 @@ public class BookingService {
     private final UserRepository userRepository;
 
     public Booking create(Booking booking, Long bookerId) {
-        Item item = itemRepository.findById(booking.getItem().getId()).orElseThrow(() -> new NotFoundException("Предмет не найден"));
+        Item item = itemRepository.findById(booking.getItem().getId())
+                .orElseThrow(() -> new NotFoundException("Предмет не найден"));
+
         if (item.getOwner().getId().equals(bookerId)) {
-            throw new ForbiddenException("Владелец не должен  бронировать свою вещь");
+            throw new ForbiddenException("Владелец не должен бронировать свою вещь");
         }
+
         User booker = userRepository.findById(bookerId)
                 .orElseThrow(() -> new NotFoundException("Пользователь по данному ID не найден"));
 
         if (!item.getIsAvailable()) {
             throw new ValidationException("Предмет недоступен для бронирования");
         }
+
         booking.setBooker(booker);
         booking.setItem(item);
         booking.setStatus(BookingStatus.WAITING);
-        System.out.println("Создаю бронирование: " + booking);
-        return bookingRepository.save(booking);
+
+        System.out.println("Создается бронирование: " + booking);
+
+        Booking savedBooking = bookingRepository.save(booking);
+        System.out.println("Сохранённое бронирование: " + savedBooking);
+
+        return savedBooking;
     }
+
 
     public Booking update(Long bookingId, Long userId,boolean approved) {
         Booking existingBooking = bookingRepository.findById(bookingId)
@@ -84,41 +94,39 @@ public class BookingService {
             throw new ConflictException("Владелец с данным id не найден " + ownerId);
         }
 
-        switch (state) {
-            case PAST:
-                return bookingRepository.findBookingsByItemOwnerAndEndBeforeOrderByStartDesc(owner.get(), LocalDateTime.now(), pageable);
-            case CURRENT:
-                return bookingRepository.findBookingsByItemOwnerAndStartBeforeAndEndAfterOrderByStartDesc(owner.get(), LocalDateTime.now(), LocalDateTime.now(), pageable);
-            case FUTURE:
-                return bookingRepository.findBookingsByItemOwnerAndStartAfterOrderByStartDesc(owner.get(), LocalDateTime.now(), pageable);
-            case WAITING:
-                return bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(owner.get(), BookingStatus.WAITING, pageable);
-            case REJECTED:
-                return bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(owner.get(), BookingStatus.REJECTED, pageable);
-            default:
-                return bookingRepository.findBookingsByItemOwnerOrderByStartDesc(owner.get(), pageable);
-        }
+        return switch (state) {
+            case PAST ->
+                    bookingRepository.findBookingsByItemOwnerAndEndBeforeOrderByStartDesc(owner.get(), LocalDateTime.now(), pageable);
+            case CURRENT ->
+                    bookingRepository.findBookingsByItemOwnerAndStartBeforeAndEndAfterOrderByStartDesc(owner.get(), LocalDateTime.now(), LocalDateTime.now(), pageable);
+            case FUTURE ->
+                    bookingRepository.findBookingsByItemOwnerAndStartAfterOrderByStartDesc(owner.get(), LocalDateTime.now(), pageable);
+            case WAITING ->
+                    bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(owner.get(), BookingStatus.WAITING, pageable);
+            case REJECTED ->
+                    bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(owner.get(), BookingStatus.REJECTED, pageable);
+            default -> bookingRepository.findBookingsByItemOwnerOrderByStartDesc(owner.get(), pageable);
+        };
     }
 
     public Page<Booking> getBookingByBooker(State state, Long bookerId, int from, int size) {
         User booker = userRepository.findById(bookerId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
-
         Pageable pageable = PageRequest.of(from / size, size);
-        switch (state) {
-            case PAST:
-                return bookingRepository.findByBookerAndEndBeforeOrderByStartDesc(booker, LocalDateTime.now(), pageable);
-            case CURRENT:
-                return bookingRepository.findByBookerAndStartBeforeAndEndAfterOrderByStartDesc(booker, LocalDateTime.now(), LocalDateTime.now(), pageable);
-            case FUTURE:
-                return bookingRepository.findByBookerAndStartAfterOrderByStartDesc(booker, LocalDateTime.now(), pageable);
-            case WAITING:
-                return bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(booker, BookingStatus.WAITING, pageable);
-            case REJECTED:
-                return bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(booker, BookingStatus.REJECTED, pageable);
-            default:
-                return bookingRepository.findByBookerOrderByStartDesc(booker, pageable);
-        }
+        return switch (state) {
+            case PAST ->
+                    bookingRepository.findByBookerAndEndBeforeOrderByStartDesc(booker, LocalDateTime.now(), pageable);
+            case CURRENT ->
+                    bookingRepository.findByBookerAndStartBeforeAndEndAfterOrderByStartDesc(booker, LocalDateTime.now(), LocalDateTime.now(), pageable);
+            case FUTURE ->
+                    bookingRepository.findByBookerAndStartAfterOrderByStartDesc(booker, LocalDateTime.now(), pageable);
+            case WAITING ->
+                    bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(booker, BookingStatus.WAITING, pageable);
+            case REJECTED ->
+                    bookingRepository.findBookingsByItemOwnerAndStatusOrderByStartDesc(booker, BookingStatus.REJECTED, pageable);
+            default -> bookingRepository.findByBookerOrderByStartDesc(booker, pageable);
+        };
     }
+
 
 
 

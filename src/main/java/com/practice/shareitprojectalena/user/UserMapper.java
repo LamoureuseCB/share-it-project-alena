@@ -28,12 +28,14 @@ public class UserMapper {
     }
 
     public UserResponseDto toResponse(User user) {
-        return UserResponseDto.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .build();
-    }
+            if (user == null) {
+                System.out.println("Пользователь не указан!");
+                return null;
+            }
+
+            return new UserResponseDto(user.getId(), user.getName(), user.getEmail());
+        }
+
 
     public List<UserResponseDto> toResponse(List<User> users) {
         return users.stream()

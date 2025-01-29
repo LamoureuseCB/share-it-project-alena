@@ -3,15 +3,15 @@ package com.practice.shareitprojectalena.item.itemDto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.practice.shareitprojectalena.booking.dto.BookingResponseDto;
 import com.practice.shareitprojectalena.item.comment.commentDto.CommentResponseDto;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ItemResponseDto {
     private Long id;
     private String name;
@@ -21,4 +21,6 @@ public class ItemResponseDto {
     private List<CommentResponseDto> comments;
     private BookingResponseDto lastBooking;
     private BookingResponseDto nextBooking;
+
+
 }

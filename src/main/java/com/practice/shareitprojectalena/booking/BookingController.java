@@ -8,8 +8,12 @@ import com.practice.shareitprojectalena.item.ItemRepository;
 import com.practice.shareitprojectalena.utils.State;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,23 +24,26 @@ import static com.practice.shareitprojectalena.utils.RequestConstants.USER_HEADE
 @RequiredArgsConstructor
 @RequestMapping("/bookings")
 public class BookingController {
+    private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
     private final BookingMapper bookingMapper;
     private final BookingService bookingService;
     private final ItemRepository itemRepository;
 
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public BookingResponseDto create(
             @RequestHeader(USER_HEADER) Long bookerId,
             @RequestBody @Valid BookingCreateDto bookingCreateDto) {
-        System.out.println("Получен запрос на создание бронирования: " + bookingCreateDto);
+        logger.info("Получен запрос на создание бронирования: {}", bookingCreateDto);
         try {
             Booking booking = bookingMapper.fromCreate(bookingCreateDto);
+            logger.info("Созданный объект Booking: {}", booking);
             Booking createdBooking = bookingService.create(booking, bookerId);
-            System.out.println("Бронирование успешно создано: " + createdBooking);
+            logger.info("Созданный объект Booking из сервиса: {}", createdBooking);
             return bookingMapper.toResponse(createdBooking);
         } catch (NotFoundException exception) {
-            System.err.println("Ошибка: " + exception.getMessage());
+            logger.error("Ошибка: " + exception.getMessage());
             throw exception;
         }
     }
@@ -71,9 +78,11 @@ public class BookingController {
             @RequestParam(defaultValue = "0") int from,
             @RequestParam(defaultValue = "10") int size
     ) {
+        Pageable pageable = PageRequest.of(from / size, size);
         Page<Booking> bookings = bookingService.getBookingByBooker(state, userId, from, size);
         return bookings.stream().map(bookingMapper::toResponse).toList();
     }
+
 
 
     @GetMapping("/owner/{ownerId}")

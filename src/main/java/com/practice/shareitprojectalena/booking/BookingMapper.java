@@ -43,16 +43,25 @@ public class BookingMapper {
     }
 
 
+
     public BookingResponseDto toResponse(Booking booking) {
-        return BookingResponseDto.builder()
+        if (booking.getBooker() == null) {
+            System.out.println("Создающий бронирование пользователь отсутствует!");
+        }
+        if (booking.getItem() == null) {
+            System.out.println("Предмет для бронирования отсутствует!");
+        }
+
+        BookingResponseDto responseDto = BookingResponseDto.builder()
                 .id(booking.getId())
-                .itemId(booking.getItem().getId())
+                .itemId(booking.getItem() != null ? booking.getItem().getId() : null)
                 .start(booking.getStart())
                 .end(booking.getEnd())
                 .status(booking.getStatus())
                 .booker(userMapper.toResponse(booking.getBooker()))
                 .item(itemMapper.toResponse(booking.getItem()))
                 .build();
+        return responseDto;
     }
 
     public void merge(Booking existingBooking, Booking updatedBooking) {

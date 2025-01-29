@@ -14,6 +14,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -69,12 +70,20 @@ public class ItemMapper {
 
 
     public ItemResponseDto toResponse(Item item) {
-        return ItemResponseDto.builder()
-                .id(item.getId())
-                .name(item.getName())
-                .description(item.getDescription())
-                .available(item.getIsAvailable())
-                .build();
+       if (item == null) {
+            System.out.println("Предмет не указан!");
+            return null;
+        }
+
+        return new ItemResponseDto(
+                item.getId(),
+                item.getName(),
+                item.getDescription(),
+                item.getIsAvailable(),
+                new ArrayList<>(),
+                null,
+                null
+        );
     }
 
     public List<ItemResponseDto> toResponse(List<Item> items) {
