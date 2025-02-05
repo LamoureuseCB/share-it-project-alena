@@ -11,6 +11,8 @@ import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.utils.BookingStatus;
 import com.practice.shareitprojectalena.utils.State;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,17 +28,28 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
 
     public Booking create(Booking booking, Long bookerId) {
+        if (booking.getItem() == null || booking.getItem().getId() == null) {
+            throw new IllegalStateException("Вещь для бронирования или ее ID не существуют");
+        }
+
         Item item = itemRepository.findById(booking.getItem().getId())
                 .orElseThrow(() -> new NotFoundException("Предмет не найден"));
 
+        logger.info("Booker ID: {}", bookerId);
+        if (item.getOwner() == null) {
+            throw new IllegalStateException("У предмета нет владельца");
+        }
+
+        logger.info("ID владельца вещи: {}", item.getOwner().getId());
         if (item.getOwner().getId().equals(bookerId)) {
             throw new ForbiddenException("Владелец не должен бронировать свою вещь");
         }
-
         User booker = userRepository.findById(bookerId)
                 .orElseThrow(() -> new NotFoundException("Пользователь по данному ID не найден"));
+
 
         if (!item.getIsAvailable()) {
             throw new ValidationException("Предмет недоступен для бронирования");
@@ -46,16 +59,15 @@ public class BookingService {
         booking.setItem(item);
         booking.setStatus(BookingStatus.WAITING);
 
-        System.out.println("Создается бронирование: " + booking);
+        logger.info("Создается бронирование: {}", booking);
 
         Booking savedBooking = bookingRepository.save(booking);
-        System.out.println("Сохранённое бронирование: " + savedBooking);
-
+        logger.info("Сохранённое бронирование: {}", savedBooking);
         return savedBooking;
     }
 
 
-    public Booking update(Long bookingId, Long userId,boolean approved) {
+    public Booking update(Long bookingId, Long userId, boolean approved) {
         Booking existingBooking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование по данному ID не найдено"));
 
@@ -78,7 +90,7 @@ public class BookingService {
     }
 
 
-    public void  deleteById(Long bookingId) {
+    public void deleteById(Long bookingId) {
         bookingRepository.deleteById(bookingId);
     }
 
@@ -126,9 +138,6 @@ public class BookingService {
             default -> bookingRepository.findByBookerOrderByStartDesc(booker, pageable);
         };
     }
-
-
-
 
 
 }

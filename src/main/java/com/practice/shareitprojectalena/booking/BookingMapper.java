@@ -1,14 +1,17 @@
 package com.practice.shareitprojectalena.booking;
 
-import com.practice.shareitprojectalena.utils.BookingStatus;
 import com.practice.shareitprojectalena.booking.dto.BookingCreateDto;
 import com.practice.shareitprojectalena.booking.dto.BookingResponseDto;
 import com.practice.shareitprojectalena.item.Item;
 import com.practice.shareitprojectalena.item.ItemMapper;
-import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.user.UserMapper;
+import com.practice.shareitprojectalena.user.entity.User;
+import com.practice.shareitprojectalena.utils.BookingStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -62,6 +65,11 @@ public class BookingMapper {
                 .item(itemMapper.toResponse(booking.getItem()))
                 .build();
         return responseDto;
+    }
+    public List<BookingResponseDto> toResponseList(List<Booking> bookings) {
+        return bookings.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
     public void merge(Booking existingBooking, Booking updatedBooking) {

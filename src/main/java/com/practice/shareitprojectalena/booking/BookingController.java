@@ -3,7 +3,9 @@ package com.practice.shareitprojectalena.booking;
 import com.practice.shareitprojectalena.booking.dto.BookingCreateDto;
 import com.practice.shareitprojectalena.booking.dto.BookingResponseDto;
 import com.practice.shareitprojectalena.error.exceptions.ConflictException;
+import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
+import com.practice.shareitprojectalena.item.Item;
 import com.practice.shareitprojectalena.item.ItemRepository;
 import com.practice.shareitprojectalena.utils.State;
 import jakarta.validation.Valid;
@@ -37,13 +39,19 @@ public class BookingController {
             @RequestBody @Valid BookingCreateDto bookingCreateDto) {
         logger.info("Получен запрос на создание бронирования: {}", bookingCreateDto);
         try {
+            Item item = itemRepository.findById(bookingCreateDto.getItemId())
+                    .orElseThrow(() -> new NotFoundException("Предмет не найден"));
+            Long ownerId = item.getOwner().getId();
+            if (ownerId.equals(bookerId)) {
+                throw new ForbiddenException("Владелец не должен бронировать свою вещь");
+            }
             Booking booking = bookingMapper.fromCreate(bookingCreateDto);
             logger.info("Созданный объект Booking: {}", booking);
             Booking createdBooking = bookingService.create(booking, bookerId);
             logger.info("Созданный объект Booking из сервиса: {}", createdBooking);
             return bookingMapper.toResponse(createdBooking);
         } catch (NotFoundException exception) {
-            logger.error("Ошибка: " + exception.getMessage());
+            logger.error("Ошибка: {}", exception.getMessage());
             throw exception;
         }
     }
@@ -65,7 +73,7 @@ public class BookingController {
         Booking booking = bookingService.findById(bookingId);
         if (!booking.getBooker().getId().equals(bookerId) &&
                 !booking.getItem().getOwner().getId().equals(bookerId)) {
-            throw new ConflictException("нет доступа к информации об этом бронировании");
+            throw new ConflictException("Нет доступа к информации об этом бронировании");
         }
         return bookingMapper.toResponse(booking);
 
@@ -82,7 +90,6 @@ public class BookingController {
         Page<Booking> bookings = bookingService.getBookingByBooker(state, userId, from, size);
         return bookings.stream().map(bookingMapper::toResponse).toList();
     }
-
 
 
     @GetMapping("/owner/{ownerId}")

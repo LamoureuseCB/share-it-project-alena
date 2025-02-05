@@ -1,6 +1,7 @@
 package com.practice.shareitprojectalena.item;
 
 
+import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.item.comment.Comment;
 import com.practice.shareitprojectalena.item.comment.CommentMapper;
 import com.practice.shareitprojectalena.item.comment.CommentService;
@@ -17,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.practice.shareitprojectalena.utils.RequestConstants.USER_HEADER;
 
@@ -44,8 +46,12 @@ public class ItemController {
                                   @PathVariable Long itemId,
                                   @RequestBody @Valid ItemUpdateDto itemUpdateDto) {
         Item item = itemMapper.fromUpdate(itemUpdateDto);
-        Item updatedItem = itemService.update(item, itemId, userId);
-        return itemMapper.toResponse(updatedItem);
+        if (item == null) {
+            throw new NotFoundException("Объект не найден");
+        }
+            Item updatedItem = itemService.update(item, itemId, userId);
+            return itemMapper.toResponse(updatedItem);
+
     }
 
     @GetMapping
@@ -57,14 +63,13 @@ public class ItemController {
     }
 
     @GetMapping("/search")
-    public List<ItemResponseDto> searchItems(@RequestParam(value = "text", required = false) String text,
-                                             @RequestParam(defaultValue = "0") int from,
-                                             @RequestParam(defaultValue = "10") int size) {
+    public List<ItemResponseDto> searchItems(@RequestParam String text, @RequestParam int from, @RequestParam int size) {
         List<Item> items = itemService.searchItems(text, from, size);
         return items.stream()
                 .map(itemMapper::toResponse)
-                .toList();
+                .collect(Collectors.toList());
     }
+
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
@@ -75,13 +80,19 @@ public class ItemController {
     @ResponseStatus(HttpStatus.CREATED)
     public CommentResponseDto create(@RequestHeader(USER_HEADER) Long userId, @RequestBody @Valid CommentCreateDto commentCreateDto, @PathVariable Long itemId) {
         User user = userService.findById(userId);
-        return commentMapper.toResponse(commentService.addComment(itemId, user, commentCreateDto.getText()));
+        if(user == null){
+            throw new NotFoundException("Пользователь не найден");
+        }
+            return commentMapper.toResponse(commentService.addComment(itemId, user, commentCreateDto.getText()));
 
     }
 
     @GetMapping("/{itemId}")
     public ItemResponseDto getItemWithComments(@PathVariable Long itemId) {
         Item item = itemService.findById(itemId);
+        if (item == null) {
+            throw new NotFoundException("Вещь не найдена");
+        }
         List<Comment> comments = commentService.findByItemId(itemId);
         return itemMapper.toResponseWithComments(item, comments);
     }
