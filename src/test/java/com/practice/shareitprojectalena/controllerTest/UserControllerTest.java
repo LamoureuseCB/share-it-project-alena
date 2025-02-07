@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -131,23 +132,41 @@ public class UserControllerTest {
     @Test
     @SneakyThrows
     void update() {
-        Long id = 1L;
-        User existingUser = new User(id, "тест", "тест@тест.com", new ArrayList<>());
-        User updatedUserWithData = User.builder().id(id).name("обновленный тест").email("тест@тест.ru").items(new ArrayList<>()).build();
-        UserUpdateDto userUpdateDto = new UserUpdateDto("обновленный тест", "тест@тест.ru");
-        UserResponseDto userResponseDto = new UserResponseDto(id, "обновленный тест", "тест@тест.ru");
+        Long userId = 1L;
 
-        when(userRepository.findByEmail(userUpdateDto.getEmail())).thenReturn(Optional.empty());
-        when(userService.findById(id)).thenReturn(existingUser);
-        when(userRepository.save(updatedUserWithData)).thenReturn(updatedUserWithData);
-        when(userMapper.fromUpdate(userUpdateDto)).thenReturn(updatedUserWithData);
-        when(userMapper.toResponse(updatedUserWithData)).thenReturn(userResponseDto);
+        User existingUser = new User(userId, "тест", "тест@тест.com", new ArrayList<>());
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/users/{id}", id)
+        UserUpdateDto updatedUserData = new UserUpdateDto("обновленный тест", "тест@тест.ru");
+
+        User updatedUserWithNewData =
+                User.builder()
+                        .id(userId)
+                        .name(updatedUserData.getName())
+                        .email(updatedUserData.getEmail())
+                        .items(new ArrayList<>())
+                        .build();
+
+        UserResponseDto expectedResponse =
+                new UserResponseDto(userId, updatedUserData.getName(), updatedUserData.getEmail());
+
+
+        when(userRepository.findByEmail(updatedUserData.getEmail())).thenReturn(Optional.empty());
+
+        when(userService.findById(userId)).thenReturn(existingUser);
+
+        when(userRepository.save(any(User.class))).thenReturn(updatedUserWithNewData);
+
+        when(userService.update(any(User.class), eq(userId))).thenReturn(updatedUserWithNewData);
+
+        when(userMapper.toResponse(any(User.class))).thenReturn(expectedResponse);
+
+        when(userMapper.fromUpdate(any(UserUpdateDto.class))).thenReturn(updatedUserWithNewData);
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/users/{id}", userId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userUpdateDto)))
+                        .content(objectMapper.writeValueAsString(updatedUserWithNewData)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.id").value(userId))
                 .andExpect(jsonPath("$.name").value("обновленный тест"))
                 .andExpect(jsonPath("$.email").value("тест@тест.ru"));
     }

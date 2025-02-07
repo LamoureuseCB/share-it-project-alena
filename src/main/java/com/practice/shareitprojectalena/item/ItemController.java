@@ -1,6 +1,8 @@
 package com.practice.shareitprojectalena.item;
 
 
+import com.practice.shareitprojectalena.error.exceptions.InvalidPageException;
+import com.practice.shareitprojectalena.error.exceptions.InvalidSizeException;
 import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.item.comment.Comment;
 import com.practice.shareitprojectalena.item.comment.CommentMapper;
@@ -45,25 +47,23 @@ public class ItemController {
     public ItemResponseDto update(@RequestHeader(USER_HEADER) Long userId,
                                   @PathVariable Long itemId,
                                   @RequestBody @Valid ItemUpdateDto itemUpdateDto) {
-        Item item = itemMapper.fromUpdate(itemUpdateDto);
-        if (item == null) {
-            throw new NotFoundException("Объект не найден");
-        }
-            Item updatedItem = itemService.update(item, itemId, userId);
-            return itemMapper.toResponse(updatedItem);
 
+        Item item = itemMapper.fromUpdate(itemUpdateDto);
+        Item updatedItem = itemService.update(item, itemId, userId);
+        return itemMapper.toResponse(updatedItem);
     }
+
 
     @GetMapping
     public List<ItemResponseDto> findAll(@RequestHeader(USER_HEADER) Long userId,
                                          @RequestParam(defaultValue = "0") int from,
-                                         @RequestParam(defaultValue = "10") int size) {
+                                         @RequestParam(defaultValue = "10") int size) throws InvalidSizeException, InvalidPageException {
         List<Item> items = itemService.findAll(userId, from, size);
         return itemMapper.toResponse(items);
     }
 
     @GetMapping("/search")
-    public List<ItemResponseDto> searchItems(@RequestParam String text, @RequestParam int from, @RequestParam int size) {
+    public List<ItemResponseDto> searchItems(@RequestParam String text, @RequestParam int from, @RequestParam int size) throws InvalidSizeException, InvalidPageException {
         List<Item> items = itemService.searchItems(text, from, size);
         return items.stream()
                 .map(itemMapper::toResponse)

@@ -23,6 +23,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -192,67 +193,83 @@ public class ItemControllerTest {
                 .andExpect(jsonPath("$.message").value("Запрос не найден"));
     }
 
+
     @Test
     @SneakyThrows
-    public void testUpdate_ItemSuccess() {
+    void updateItem() {
         Long itemId = 1L;
         Long userId = 1L;
 
-        ItemUpdateDto itemUpdateDto = new ItemUpdateDto();
-        itemUpdateDto.setName("Обновленная вещь");
-        itemUpdateDto.setDescription("Обновленное описание");
-        itemUpdateDto.setIsAvailable(false);
+        User owner = new User();
+        owner.setId(userId);
+
+        Item existingItem = new Item();
+        existingItem.setId(itemId);
+        existingItem.setName("тестовая вещь");
+        existingItem.setDescription("описание");
+        existingItem.setOwner(owner);
+        existingItem.setIsAvailable(true);
 
         Item updatedItem = new Item();
         updatedItem.setId(itemId);
-        updatedItem.setName(itemUpdateDto.getName());
-        updatedItem.setDescription(itemUpdateDto.getDescription());
-        updatedItem.setIsAvailable(itemUpdateDto.getIsAvailable());
+        updatedItem.setName("Тестовая вещь");
+        updatedItem.setDescription("Новое описание");
+        updatedItem.setOwner(owner);
 
-        ItemResponseDto itemResponseDto = new ItemResponseDto();
-        itemResponseDto.setName(updatedItem.getName());
-        itemResponseDto.setId(updatedItem.getId());
-        itemResponseDto.setAvailable(updatedItem.getIsAvailable());
-        itemResponseDto.setDescription(itemUpdateDto.getDescription());
+        ItemUpdateDto itemUpdateDto = new ItemUpdateDto();
+        itemUpdateDto.setName(updatedItem.getName());
+        itemUpdateDto.setDescription(updatedItem.getDescription());
+        itemUpdateDto.setIsAvailable(true);
+
+        ItemResponseDto itemResponseDto = ItemResponseDto.builder()
+                .id(existingItem.getId())
+                .name(existingItem.getName())
+                .description(existingItem.getDescription())
+                .available(existingItem.getIsAvailable())
+                .build();
 
 
+        when(itemRepository.findById(itemId)).thenReturn(Optional.of(existingItem));
         when(itemService.update(any(Item.class), eq(itemId), eq(userId))).thenReturn(updatedItem);
+        when(itemMapper.fromUpdate(itemUpdateDto)).thenReturn(updatedItem);
         when(itemMapper.toResponse(updatedItem)).thenReturn(itemResponseDto);
 
-        mockMvc.perform(patch("/items/{itemId}", itemId)
-                        .header(USER_HEADER, userId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(itemUpdateDto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", Matchers.is(itemId.intValue())))
-                .andExpect(jsonPath("$.name", Matchers.is("Обновленная вещь")))
-                .andExpect(jsonPath("$.description", Matchers.is("Обновленное описание")))
-                .andExpect(jsonPath("$.available", Matchers.is(false)));
+
+            mockMvc.perform(MockMvcRequestBuilders.patch("/items/{itemId}", itemId)
+                            .header(USER_HEADER, userId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(itemUpdateDto)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(1L))
+                    .andExpect(jsonPath("$.name").value("Тестовая вещь"))
+                    .andExpect(jsonPath("$.description").value("Новое описание"))
+                    .andExpect(jsonPath("$.userId").value(userId));
+
     }
 
 
     @Test
     @SneakyThrows
     public void testUpdateUnsuccessfully() {
-        Long nonExistentItemId = 99999999L;
 
-        ItemUpdateDto itemUpdateDto = new ItemUpdateDto();
-        itemUpdateDto.setName("Вещь с несуществующим ID");
-        itemUpdateDto.setDescription("Описание");
-        itemUpdateDto.setIsAvailable(false);
+            Long itemId = 1L;
+            Long userId = 10L;
+            ItemUpdateDto itemUpdateDto = new ItemUpdateDto("Новая вещь", "Новое описание", true);
 
-        when(itemService.update(any(Item.class), eq(nonExistentItemId), eq(userId)))
-                .thenThrow(new NotFoundException("Объект не найден"));
 
-        mockMvc.perform(patch("/items/{itemId}", nonExistentItemId)
-                        .header(USER_HEADER, userId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(itemUpdateDto)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Объект не найден"));
-    }
+            when(itemService.update(any(Item.class), eq(itemId), eq(userId)))
+                    .thenThrow(new NotFoundException("Вещь для проката по данному ID не найдена"));
 
-    @Test
+            mockMvc.perform(MockMvcRequestBuilders.patch("/items/{itemId}", itemId)
+                            .header(USER_HEADER, userId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(itemUpdateDto)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.error").value("Вещь для проката по данному ID не найдена"));
+        }
+
+
+        @Test
     @SneakyThrows
     public void testDeleteItemSuccessfully() {
         Long itemId = 1L;
@@ -318,10 +335,11 @@ public class ItemControllerTest {
                         .param("size", String.valueOf(size))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", Matchers.hasSize(size)));
-//                .andExpect(jsonPath("$[0].name", Matchers.is("Тестовая вещь 1")))
-//                .andExpect(jsonPath("$[1].name", Matchers.is("Тестовая вещь 2")));
+                .andExpect(jsonPath("$", Matchers.hasSize(size)))
+                .andExpect(jsonPath("$[0].name", Matchers.is("Тестовая вещь 1")))
+                .andExpect(jsonPath("$[1].name", Matchers.is("Тестовая вещь 2")));
     }
+
     @Test
     @SneakyThrows
     public void searchItems_EmptyResult() {
@@ -493,7 +511,6 @@ public class ItemControllerTest {
         when(itemMapper.toResponseWithComments(item, comments)).thenReturn(expectedDto);
 
 
-
         mockMvc.perform(get("/items/{itemId}", itemId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -515,7 +532,7 @@ public class ItemControllerTest {
                         .header(USER_HEADER, userId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
- }
+    }
 
     @Test
     @SneakyThrows

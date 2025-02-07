@@ -103,7 +103,6 @@ public class BookingController {
 
         Page<Booking> bookings = bookingService.getByStateAndOwner(state, ownerId, pageable);
 
-
         return bookings.map(bookingMapper::toResponse);
     }
 

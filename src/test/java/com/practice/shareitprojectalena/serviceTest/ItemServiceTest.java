@@ -13,6 +13,7 @@ import com.practice.shareitprojectalena.request.entity.ItemRequest;
 import com.practice.shareitprojectalena.user.UserRepository;
 import com.practice.shareitprojectalena.user.entity.User;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +48,7 @@ public class ItemServiceTest {
     private User user;
     private Item item;
     private Long userId = 1L;
-    private final Long requestId = 2L;
+    private Long itemId = 1L;
 
     @BeforeEach
     public void setUp() {
@@ -57,13 +58,13 @@ public class ItemServiceTest {
 
         item = new Item();
         item.setName("Дрель");
+        item.setId(itemId);
         item.setIsAvailable(true);
-    }
+  }
 
     @Test
     public void testCreateItemSuccess() {
-        when(userRepository.findById(userId))
-                .thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(itemRepository.save(any(Item.class)))
                 .thenReturn(item);
 
@@ -93,6 +94,7 @@ public class ItemServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         ItemRequest itemRequest = new ItemRequest();
+        Long requestId = 2L;
         itemRequest.setId(requestId);
         Item item = new Item();
         item.setRequest(itemRequest);
@@ -263,34 +265,10 @@ public class ItemServiceTest {
         assertEquals("Обновлять параметры вещи может только владелец", exception.getMessage());
     }
 
-    @Test
-    void findAll_NegativeFrom_ThrowsInvalidPageException() {
 
-        Long userId = 1L;
-        int from = -1;
-        int size = 10;
-
-        InvalidPageException exception = assertThrows(InvalidPageException.class, () -> {
-            itemService.findAll(userId, from, size);
-        });
-        assertEquals("Ошибка!Страница не должна быть меньше нуля", exception.getMessage());
-    }
 
     @Test
-    void findAll_NonPositiveSize_ThrowsInvalidSizeException() {
-
-        Long userId = 1L;
-        int from = 0;
-        int size = 0;
-
-        InvalidSizeException exception = assertThrows(InvalidSizeException.class, () -> {
-            itemService.findAll(userId, from, size);
-        });
-        assertEquals("Ошибка!Размер должен быть положительным", exception.getMessage());
-    }
-
-    @Test
-    void findAll_ValidParameters_ReturnsItemList() {
+    void findAll_ValidParameters_ReturnsItemList() throws InvalidSizeException, InvalidPageException {
 
         Long userId = 1L;
         int from = 0;
@@ -338,7 +316,7 @@ public class ItemServiceTest {
         }
 
         @Test
-        void searchItems_EmptyText_ReturnsEmptyList () {
+        void searchItems_EmptyText_ReturnsEmptyList () throws InvalidSizeException, InvalidPageException {
             String text = "";
             int from = 0;
             int size = 10;
@@ -347,6 +325,25 @@ public class ItemServiceTest {
 
             assertTrue(result.isEmpty(), "");
         }
+    @Test
+    void searchItems_ValidParameters_ReturnsItemList () throws InvalidSizeException, InvalidPageException {
+
+        String text = "item";
+        int from = 0;
+        int size = 10;
+
+        Item item1 = new Item();
+        Item item2 = new Item();
+
+        when(itemRepository.search(text, PageRequest.of(from, size)))
+                .thenReturn(List.of(item1, item2));
+
+        List<Item> result = itemService.searchItems(text, from, size);
+
+        assertEquals(2, result.size(), "Ожидается 2 предмета");
+        assertTrue(result.contains(item1));
+        assertTrue(result.contains(item2));
+    }
 
         @Test
         void searchItems_NegativeFrom_ThrowsInvalidPageException () {
@@ -360,37 +357,37 @@ public class ItemServiceTest {
             assertEquals("Ошибка!Страница не должна быть меньше нуля", exception.getMessage());
         }
 
-        @Test
-        void searchItems_NonPositiveSize_ThrowsInvalidSizeException () {
-            String text = "item";
-            int from = 0;
-            int size = 0;
+    @Test
+    void searchItems_NonPositiveSize_ThrowsInvalidSizeException() {
+        String text = "item";
+        int from = 0;
+        int size = 0;
 
-            InvalidSizeException exception = assertThrows(InvalidSizeException.class, () -> {
-                itemService.searchItems(text, from, size);
-            });
-            assertEquals("Ошибка!Размер должен быть положительным", exception.getMessage());
-        }
+        InvalidSizeException exception = assertThrows(InvalidSizeException.class, () -> {
+            itemService.searchItems(text, from, size);
+        });
+        assertEquals("Ошибка!Размер должен быть положительным", exception.getMessage());
+    }
 
-        @Test
-        void searchItems_ValidParameters_ReturnsItemList () {
 
-            String text = "item";
-            int from = 0;
-            int size = 10;
 
-            Item item1 = new Item();
-            Item item2 = new Item();
+    @Test
+    void findAll_NegativeFrom_ThrowsInvalidPageException() {
+        int from = -1;
+        int size = 10;
+        InvalidPageException exception = assertThrows(InvalidPageException.class, () -> itemService.findAll(userId, from, size));
+        Assertions.assertEquals("Ошибка!Страница не должна быть меньше нуля", exception.getMessage());
+    }
 
-            when(itemRepository.search(text, PageRequest.of(from, size)))
-                    .thenReturn(List.of(item1, item2));
+    @Test
+    void findAll_NonPositiveSize_ThrowsInvalidSizeException() {
+        Long userId = 1L;
+        int from = 0;
+        int size = 0;
+        InvalidSizeException exception = assertThrows(InvalidSizeException.class, () -> itemService.findAll(userId, from, size));
 
-            List<Item> result = itemService.searchItems(text, from, size);
-
-            assertEquals(2, result.size(), "Ожидается 2 предмета");
-            assertTrue(result.contains(item1));
-            assertTrue(result.contains(item2));
-        }
+        Assertions.assertEquals("Ошибка!Размер должен быть положительным", exception.getMessage());
+    }
     }
 
 

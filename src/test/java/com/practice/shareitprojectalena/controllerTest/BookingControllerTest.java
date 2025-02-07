@@ -84,7 +84,6 @@ public class BookingControllerTest {
     private Item item;
     private final Long itemId = 1L;
 
-
     @BeforeEach
     void setUp() {
         User owner = new User();
@@ -397,7 +396,8 @@ public class BookingControllerTest {
                 .getResponse()
                 .getContentAsString(StandardCharsets.UTF_8);
     }
-  @Test
+
+    @Test
     @SneakyThrows
     void getBookingsByState_BookingsFoundSuccess() {
         State state = State.CURRENT;
@@ -512,26 +512,50 @@ public class BookingControllerTest {
     @Test
     @SneakyThrows
     void findAllByOwnerIdAndState_Success() {
-        State state = State.ALL;
+        State state = State.CURRENT;
         Long userId = 1L;
-        BookingCreateDto bookingCreateDto = createBookingDto();
-        Booking booking = createMockBooking(bookingCreateDto);
-        booking.setId(1L);
-        BookingResponseDto bookingResponseDto = createResponseDto(booking);
-        bookingResponseDto.setId(booking.getId());
+        Long ownerId = userId;
+        Booking mockBooking1 = createMockBooking(createBookingDto());
+        mockBooking1.setId(1L);
+
+        Booking mockBooking2 = createMockBooking(createBookingDto());
+        mockBooking2.setId(2L);
+
+        BookingResponseDto responseDto1 = createResponseDto(mockBooking1);
+        BookingResponseDto responseDto2 = createResponseDto(mockBooking2);
+
 
         when(bookingService.getByStateAndOwner(eq(state), eq(ownerId), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(Collections.singletonList(booking)));
-        when(bookingMapper.toResponse(any(Booking.class))).thenReturn(bookingResponseDto);
+                .thenReturn(new PageImpl<>(List.of(mockBooking1, mockBooking2)));
+
+
+        when(bookingMapper.toResponse(mockBooking1)).thenReturn(responseDto1);
+        when(bookingMapper.toResponse(mockBooking2)).thenReturn(responseDto2);
 
         mockMvc.perform(get("/owner/{ownerId}", ownerId)
                         .header(USER_HEADER, userId)
                         .param("state", state.name())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].id").value(booking.getId()));
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].id").value(mockBooking1.getId()))
+                .andExpect(jsonPath("$.content[1].id").value(mockBooking2.getId()));
     }
+
+
+    @Test
+    @SneakyThrows
+    void findAllByOwnerIdAndState_Fail_DifferentUser() {
+        State state = State.CURRENT;
+        Long userId = 1L;
+
+        mockMvc.perform(get("/owner/{ownerId}", 2L)
+                        .header(USER_HEADER, userId)
+                        .param("state", state.name())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict());
+    }
+
     @Test
     @SneakyThrows
     void findAllByOwnerIdAndState_ConflictException() {
@@ -543,7 +567,7 @@ public class BookingControllerTest {
                         .param("state", state.name())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isConflict());
-   }
+    }
 }
 
 

@@ -2,6 +2,8 @@ package com.practice.shareitprojectalena.repositoryTest;
 
 import com.practice.shareitprojectalena.booking.Booking;
 import com.practice.shareitprojectalena.booking.BookingRepository;
+import com.practice.shareitprojectalena.item.Item;
+import com.practice.shareitprojectalena.item.ItemRepository;
 import com.practice.shareitprojectalena.user.UserRepository;
 import com.practice.shareitprojectalena.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,23 +27,34 @@ public class BookingRepositoryTest {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private ItemRepository itemRepository;
 
     private User owner;
 
     @BeforeEach
     public void setUp() {
         owner = new User();
-        owner.setId(1L);
         owner.setName("Тестовый владелец");
-        userRepository.save(owner);
+
+        Item item = new Item();
+        item.setName("Тестовая вещь");
+        item.setOwner(owner);
+        item.setIsAvailable(true);
+        owner.setItems(List.of(item));
+        owner = userRepository.save(owner);
+        itemRepository.save(item);
+
 
         Booking booking1 = new Booking();
-        booking1.setId(1L);
+        booking1.setBooker(owner);
+        booking1.setItem(item);
         booking1.setStart(LocalDateTime.now().minusDays(2));
         booking1.setEnd(LocalDateTime.now().minusDays(1));
 
         Booking booking2 = new Booking();
-        booking2.setId(2L);
+        booking2.setBooker(owner);
+        booking2.setItem(item);
         booking2.setStart(LocalDateTime.now().minusDays(5));
         booking2.setEnd(LocalDateTime.now().minusDays(3));
 
@@ -64,5 +78,6 @@ public class BookingRepositoryTest {
         Page<Booking> bookings = bookingRepository.findBookingsByItemOwnerAndStartBeforeAndEndAfterOrderByStartDesc(owner, LocalDateTime.now(), LocalDateTime.now(), pageable);
 
         assertNotNull(bookings);
-        assertTrue(bookings.isEmpty()); }
+        assertTrue(bookings.isEmpty());
+    }
 }

@@ -2,9 +2,12 @@ package com.practice.shareitprojectalena.repositoryTest;
 
 import com.practice.shareitprojectalena.item.Item;
 import com.practice.shareitprojectalena.item.ItemRepository;
+import com.practice.shareitprojectalena.request.ItemRequestRepository;
+import com.practice.shareitprojectalena.request.entity.ItemRequest;
 import com.practice.shareitprojectalena.user.UserRepository;
 import com.practice.shareitprojectalena.user.entity.User;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -21,32 +24,63 @@ public class ItemRepositoryTest {
     private ItemRepository itemRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private ItemRequestRepository itemRequestRepository;
+    private User owner;
+    private Item item;
+    private ItemRequest request;
 
+    @BeforeEach
+    void setUp() {
+
+        owner = new User();
+        owner.setName("Владелец");
+        owner.setEmail("owner@owner.com");
+
+
+        request = new ItemRequest();
+        request.setDescription("описание запроса ");
+        request.setRequester(owner);
+
+
+        item = new Item();
+        item.setOwner(owner);
+        item.setName("Тестовая вещь");
+        item.setDescription("описание ");
+        item.setIsAvailable(true);
+        item.setRequest(request);
+
+
+        owner.setItems(List.of(item));
+        owner = userRepository.save(owner);
+        request = itemRequestRepository.save(request);
+        item = itemRepository.save(item);
+    }
 
     @Test
     void findAllByOwner_Id() {
         List<Item> items = itemRepository.findAllByOwner_Id(1L, PageRequest.of(0, 10));
-        assertEquals(10, items.size());
+        assertEquals(1, items.size());
+
     }
 
-    @Test
-    void searchAByTextAndPage() {
-        User owner = User.builder()
-                .name("user1")
-                .email("user1@email.com")
-                .build();
-        owner = userRepository.save(owner);
-        Item item = Item.builder()
-                .name("name")
-                .description("description")
-                .isAvailable(true)
-                .owner(owner)
-                .build();
-        item = itemRepository.save(item);
-        Pageable pageable = PageRequest.of(0, 10);
-        List<Item> items = itemRepository.search("name", pageable);
-        Assertions.assertTrue(items.get(0).getName().contains(item.getName()));
-    }
+        @Test
+        void search_ByTextAndPage() {
+            Pageable pageable = PageRequest.of(0, 10);
+            List<Item> items = itemRepository.search("вещь", pageable);
+
+            Assertions.assertFalse(items.isEmpty());
+            Assertions.assertTrue(items.get(0).getName().contains(item.getName()));
+        }
+
+        @Test
+        void findByRequestId() {
+            List<Item> items = itemRepository.findByRequestId(request.getId());
+            Assertions.assertFalse(items.isEmpty());
+            Assertions.assertEquals(1, items.size());
+            Assertions.assertEquals(item.getId(), items.get(0).getId());
+        }
+
 
 }
 

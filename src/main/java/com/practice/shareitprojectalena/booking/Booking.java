@@ -1,12 +1,9 @@
 package com.practice.shareitprojectalena.booking;
 
-import com.practice.shareitprojectalena.utils.BookingStatus;
 import com.practice.shareitprojectalena.item.Item;
 import com.practice.shareitprojectalena.user.entity.User;
-
+import com.practice.shareitprojectalena.utils.BookingStatus;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.FutureOrPresent;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -30,10 +27,10 @@ public class Booking {
     @ManyToOne
     @JoinColumn(name = "booker_id", nullable = false)
     private User booker;
-    @FutureOrPresent(message = "Дата начала бронирования не может быть в прошлом")
+//    @FutureOrPresent(message = "Дата начала бронирования не может быть в прошлом")
     @Column(name = "start_date")
     private LocalDateTime start;
-    @Future(message = "Дата окончания бронирования должна быть в будущем")
+//    @Future(message = "Дата окончания бронирования должна быть в будущем")
     @Column(name = "end_date")
     private LocalDateTime end;
     @Enumerated(EnumType.STRING)

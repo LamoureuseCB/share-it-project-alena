@@ -10,7 +10,9 @@ import com.practice.shareitprojectalena.request.entity.ItemRequest;
 import com.practice.shareitprojectalena.user.UserRepository;
 import com.practice.shareitprojectalena.user.entity.User;
 import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,12 +23,15 @@ import java.util.List;
 
 @AllArgsConstructor
 @Service
+@Slf4j
 public class ItemService {
+    private static final Logger logger = LoggerFactory.getLogger(ItemService.class);
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
-        private final ItemRequestRepository itemRequestRepository;
+    private final ItemRequestRepository itemRequestRepository;
     private final ItemMapper itemMapper;
     private final CommentRepository commentRepository;
+
 
     public Item create(Item item, Long userId) {
         User user = userRepository.findById(userId)
@@ -47,11 +52,10 @@ public class ItemService {
     }
 
     public Item update(Item item, Long itemId, Long userId) {
-        Item existingItem = findById(itemId);
-        if (existingItem == null) {
-            throw new NotFoundException("Вещь для проката по данному ID не найдена");
-        }
-        if (!existingItem.getOwner().getId().equals(userId)) {
+        Item existingItem = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь для проката по данному ID не найдена"));
+
+        if (existingItem.getOwner() == null || !existingItem.getOwner().getId().equals(userId)) {
             throw new ForbiddenException("Обновлять параметры вещи может только владелец");
         }
         itemMapper.merge(existingItem, item);
@@ -59,40 +63,47 @@ public class ItemService {
     }
 
 
-    @SneakyThrows
-    public List<Item> findAll(Long userId, int from, int size) {
-        if (from < 0) throw new InvalidPageException("Ошибка!Страница не должна быть меньше нуля");
-        if (size <= 0) throw new InvalidSizeException("Ошибка!Размер должен быть положительным");
+    public List<Item> findAll(Long userId, int from, int size) throws InvalidPageException, InvalidSizeException {
+        if (from < 0) {
+            String errorMessage = "Ошибка!Страница не должна быть меньше нуля";
+            log.info("Выброшенное  исключение: {}", errorMessage);
+            throw new InvalidPageException(errorMessage);
+        }
+
+        if (size <= 0) {
+            throw new InvalidSizeException("Ошибка!Размер должен быть положительным");
+        }
 
         Pageable pageable = PageRequest.of(from / size, size);
         return itemRepository.findAllByOwner_Id(userId, pageable);
     }
+
 
     public void delete(Long id) {
         Item item = findById(id);
         itemRepository.deleteById(item.getId());
     }
 
-    @SneakyThrows
-    public List<Item> searchItems(String text, int from, int size) {
+
+    public List<Item> searchItems(String text, int from, int size) throws InvalidPageException, InvalidSizeException {
         if (text.isBlank()) {
             return Collections.emptyList();
         }
-        if (from < 0) throw new InvalidPageException("Ошибка!Страница не должна быть меньше нуля");
-        if (size <= 0) throw new InvalidSizeException("Ошибка!Размер должен быть положительным");
+        if (from < 0) {
+            throw new InvalidPageException("Ошибка!Страница не должна быть меньше нуля");
+        }
+        if (size <= 0) {
+            throw new InvalidSizeException("Ошибка!Размер должен быть положительным");
+        }
 
         Pageable pageable = PageRequest.of(from, size);
         return itemRepository.search(text, pageable);
     }
 
+
     public List<Item> findByRequestId(Long requesterId) {
         return itemRepository.findByRequestId(requesterId);
     }
 
-//    public Item getItemWithComments(Long itemId) {
-//        Item item = findById(itemId);
-//        List<Comment> comments = item.getComments();
-//        return item;
-//    }
 }
 
