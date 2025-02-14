@@ -39,7 +39,7 @@ public class CommentServiceTest {
     @Test
     void findByItemIdSuccess() {
         Comment comment = new Comment();
-        comment.setId(1);
+        comment.setId(1L);
         comment.setItem(new Item());
         comment.getItem().setId(itemId);
         List<Comment> expectedComments = new ArrayList<>();
@@ -68,7 +68,7 @@ public class CommentServiceTest {
         when(itemService.findById(itemId)).thenReturn(item);
 
         Comment savedComment = new Comment();
-        savedComment.setId(3);
+        savedComment.setId(3L);
         savedComment.setText(description);
         savedComment.setAuthor(author);
         savedComment.setItem(item);

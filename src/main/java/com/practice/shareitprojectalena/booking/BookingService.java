@@ -28,15 +28,15 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
-    private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
+    private static final Logger logger = LoggerFactory.getLogger(BookingService.class);
 
     public Booking create(Booking booking, Long bookerId) {
         if (booking.getItem() == null || booking.getItem().getId() == null) {
             throw new IllegalStateException("Вещь для бронирования или ее ID не существуют");
         }
 
-        Item item = itemRepository.findById(booking.getItem().getId())
-                .orElseThrow(() -> new NotFoundException("Предмет не найден"));
+        Item item = itemRepository.findById(booking.getItem().getId()).orElseThrow(()-> new NotFoundException("Предмет не найден"));
+
 
         logger.info("Booker ID: {}", bookerId);
         if (item.getOwner() == null) {
@@ -71,10 +71,19 @@ public class BookingService {
         Booking existingBooking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование по данному ID не найдено"));
 
+
+        if (existingBooking.getItem() == null || existingBooking.getItem().getOwner() == null) {
+            throw new IllegalStateException("Предмет бронирования или его владелец отсутствуют.");
+        }
+
+
         Long ownerId = existingBooking.getItem().getOwner().getId();
+
+
         if (!ownerId.equals(userId)) {
             throw new ForbiddenException("Обновить бронирование невозможно");
         }
+
         if (approved) {
             existingBooking.setStatus(BookingStatus.APPROVED);
         } else {
@@ -83,6 +92,7 @@ public class BookingService {
 
         return bookingRepository.save(existingBooking);
     }
+
 
 
     public List<Booking> findAll() {

@@ -27,10 +27,8 @@ public class Booking {
     @ManyToOne
     @JoinColumn(name = "booker_id", nullable = false)
     private User booker;
-//    @FutureOrPresent(message = "Дата начала бронирования не может быть в прошлом")
     @Column(name = "start_date")
     private LocalDateTime start;
-//    @Future(message = "Дата окончания бронирования должна быть в будущем")
     @Column(name = "end_date")
     private LocalDateTime end;
     @Enumerated(EnumType.STRING)

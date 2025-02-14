@@ -10,6 +10,7 @@ import com.practice.shareitprojectalena.item.itemDto.ItemResponseDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemUpdateDto;
 import com.practice.shareitprojectalena.request.entity.ItemRequest;
 import com.practice.shareitprojectalena.user.UserMapper;
+
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,15 +18,21 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+
 @Component
 @AllArgsConstructor
 @NoArgsConstructor
-
 public class ItemMapper {
+
     private CommentMapper commentMapper;
     private UserMapper userMapper;
 
+
+
     public Item fromCreate(ItemCreateDto itemCreateDto) {
+        if (itemCreateDto == null) {
+            throw new IllegalArgumentException("Поля для создания вещи видимо оказались пустыми, нужно заполнить");
+        }
         ItemRequest itemRequest = new ItemRequest();
         itemRequest.setId(itemCreateDto.getRequestId());
         return Item.builder()
@@ -36,7 +43,11 @@ public class ItemMapper {
                 .build();
     }
 
+
     public Item fromUpdate(ItemUpdateDto itemUpdateDto) {
+        if (itemUpdateDto == null) {
+            throw new IllegalArgumentException("Поля для обновления вещи видимо оказались пустыми, нужно заполнить");
+        }
         return Item.builder()
                 .name(itemUpdateDto.getName())
                 .description(itemUpdateDto.getDescription())
@@ -100,6 +111,7 @@ public class ItemMapper {
                 .lastBooking(item.getLastBooking() != null ? this.toResponse(item.getLastBooking()) : null)
                 .build();
     }
+
 
     public BookingResponseDto toResponse(Booking booking) {
         return BookingResponseDto.builder()

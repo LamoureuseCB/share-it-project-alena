@@ -32,54 +32,64 @@ public class ItemRepositoryTest {
 
     @BeforeEach
     void setUp() {
-
         owner = new User();
         owner.setName("Владелец");
         owner.setEmail("owner@owner.com");
 
-
         request = new ItemRequest();
         request.setDescription("описание запроса ");
-        request.setRequester(owner);
-
 
         item = new Item();
-        item.setOwner(owner);
         item.setName("Тестовая вещь");
         item.setDescription("описание ");
         item.setIsAvailable(true);
+
+        owner = userRepository.save(owner);
+
+        request.setRequester(owner);
+        request = itemRequestRepository.save(request);
+
+
+        item.setOwner(owner);
         item.setRequest(request);
 
+        List<Item> savedItems = List.of(item);
 
-        owner.setItems(List.of(item));
-        owner = userRepository.save(owner);
-        request = itemRequestRepository.save(request);
-        item = itemRepository.save(item);
+        for (Item i : savedItems) {
+            i.setOwner(owner);
+            i.setRequest(request);
+            this.item = itemRepository.save(i);
+        }
+
     }
 
     @Test
     void findAllByOwner_Id() {
-        List<Item> items = itemRepository.findAllByOwner_Id(1L, PageRequest.of(0, 10));
-        assertEquals(1, items.size());
+        Long ownerId = this.owner.getId();
+        List<Item> repositoriesItem = this.itemRepository.findAllByOwner_Id(ownerId, PageRequest.of(0, 10)
+        );
+        assertEquals(1, repositoriesItem.size());
+
 
     }
 
-        @Test
-        void search_ByTextAndPage() {
-            Pageable pageable = PageRequest.of(0, 10);
-            List<Item> items = itemRepository.search("вещь", pageable);
 
-            Assertions.assertFalse(items.isEmpty());
-            Assertions.assertTrue(items.get(0).getName().contains(item.getName()));
-        }
+    @Test
+    void search_ByTextAndPage() {
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Item> items = itemRepository.search("вещь", pageable);
 
-        @Test
-        void findByRequestId() {
-            List<Item> items = itemRepository.findByRequestId(request.getId());
-            Assertions.assertFalse(items.isEmpty());
-            Assertions.assertEquals(1, items.size());
-            Assertions.assertEquals(item.getId(), items.get(0).getId());
-        }
+        Assertions.assertFalse(items.isEmpty());
+        Assertions.assertTrue(items.get(0).getName().contains(item.getName()));
+    }
+
+    @Test
+    void findByRequestId() {
+        List<Item> items = itemRepository.findByRequestId(request.getId());
+        Assertions.assertFalse(items.isEmpty());
+        Assertions.assertEquals(1, items.size());
+        Assertions.assertEquals(item.getId(), items.get(0).getId());
+    }
 
 
 }

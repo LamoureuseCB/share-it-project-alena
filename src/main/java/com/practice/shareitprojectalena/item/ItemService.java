@@ -34,6 +34,9 @@ public class ItemService {
 
 
     public Item create(Item item, Long userId) {
+        if (item == null) {
+            throw new IllegalArgumentException("Предмет не может быть null(сообщение из  сервиса item)");
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь по данному ID не найден"));
         item.setOwner(user);
@@ -48,7 +51,10 @@ public class ItemService {
 
 
     public Item findById(Long id) {
-        return itemRepository.findById(id).orElseThrow(() -> new NotFoundException("Объект не найден"));
+        log.info("Отправляется запрос из  itemService в itemRepository для поиска по ID {}", id);
+        Item item = itemRepository.findById(id).orElseThrow(() -> new NotFoundException("Объект не найден"));
+        System.out.println("Найденный предмет: " + item);
+        return item;
     }
 
     public Item update(Item item, Long itemId, Long userId) {

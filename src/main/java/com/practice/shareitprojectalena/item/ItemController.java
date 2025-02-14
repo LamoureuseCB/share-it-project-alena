@@ -87,6 +87,7 @@ public class ItemController {
 
     }
 
+
     @GetMapping("/{itemId}")
     public ItemResponseDto getItemWithComments(@PathVariable Long itemId) {
         Item item = itemService.findById(itemId);
@@ -96,6 +97,8 @@ public class ItemController {
         List<Comment> comments = commentService.findByItemId(itemId);
         return itemMapper.toResponseWithComments(item, comments);
     }
+
+
 
 }
 

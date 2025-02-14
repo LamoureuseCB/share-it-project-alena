@@ -2,16 +2,16 @@ package com.practice.shareitprojectalena.booking;
 
 import com.practice.shareitprojectalena.booking.dto.BookingCreateDto;
 import com.practice.shareitprojectalena.booking.dto.BookingResponseDto;
+import com.practice.shareitprojectalena.error.exceptions.ValidationException;
 import com.practice.shareitprojectalena.item.Item;
 import com.practice.shareitprojectalena.item.ItemMapper;
+import com.practice.shareitprojectalena.item.ItemService;
 import com.practice.shareitprojectalena.user.UserMapper;
 import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.utils.BookingStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -19,11 +19,30 @@ public class BookingMapper {
 
     private final ItemMapper itemMapper;
     private final UserMapper userMapper;
-
+    private final ItemService itemService;
 
     public Booking fromCreate(BookingCreateDto bookingCreateDto) {
-        Item item = new Item();
-        item.setId(bookingCreateDto.getItemId());
+        if (bookingCreateDto == null) {
+            throw new IllegalArgumentException("Поля для создания бронирования должны быть заполнены");
+        }
+        if (bookingCreateDto.getItemId() == null) {
+            throw new IllegalArgumentException("Предмет для бронирования не указан");
+        }
+
+        Item item = itemService.findById(bookingCreateDto.getItemId());
+
+
+        if (item == null) {
+            throw new IllegalArgumentException("Предмет с таким ID не найден");
+        }
+
+        if (item.getOwner() == null) {
+            throw new IllegalArgumentException("Владелец предмета не указан");
+        }
+        if (!item.getIsAvailable()) {
+            throw new ValidationException("Предмет недоступен для бронирования");
+        }
+
         return Booking.builder()
                 .item(item)
                 .start(bookingCreateDto.getStart())
@@ -31,6 +50,8 @@ public class BookingMapper {
                 .status(BookingStatus.WAITING)
                 .build();
     }
+
+
 
 
 
@@ -45,50 +66,32 @@ public class BookingMapper {
                 .build();
     }
 
-
-
     public BookingResponseDto toResponse(Booking booking) {
-        if (booking.getBooker() == null) {
-            System.out.println("Создающий бронирование пользователь отсутствует!");
-        }
-        if (booking.getItem() == null) {
-            System.out.println("Предмет для бронирования отсутствует!");
+        if (booking == null) {
+            throw new IllegalArgumentException("Бронирование отсутствует");
         }
 
-        BookingResponseDto responseDto = BookingResponseDto.builder()
+        if (booking.getBooker() == null) {
+            throw new IllegalStateException ("Создающий бронирование пользователь отсутствует!");
+        }
+
+        if (booking.getItem() == null) {
+            throw new IllegalStateException("Предмет для бронирования отсутствует! ");
+        }
+
+        if (booking.getItem().getOwner() == null) {
+            throw new IllegalStateException("Владелец предмета отсутствует!");
+        }
+
+        return BookingResponseDto.builder()
                 .id(booking.getId())
-                .itemId(booking.getItem() != null ? booking.getItem().getId() : null)
+                .itemId(booking.getItem().getId())
                 .start(booking.getStart())
                 .end(booking.getEnd())
                 .status(booking.getStatus())
                 .booker(userMapper.toResponse(booking.getBooker()))
                 .item(itemMapper.toResponse(booking.getItem()))
                 .build();
-        return responseDto;
-    }
-    public List<BookingResponseDto> toResponseList(List<Booking> bookings) {
-        return bookings.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
     }
 
-    public void merge(Booking existingBooking, Booking updatedBooking) {
-        if (updatedBooking.getStart() != null) {
-            existingBooking.setStart(updatedBooking.getStart());
-        }
-        if (updatedBooking.getEnd() != null) {
-            existingBooking.setEnd(updatedBooking.getEnd());
-        }
-
-        if (updatedBooking.getStatus() != null) {
-            existingBooking.setStatus(updatedBooking.getStatus());
-        }
-
-        if (updatedBooking.getItem() != null && !existingBooking.getItem().equals(updatedBooking.getItem())) {
-            existingBooking.setItem(updatedBooking.getItem());
-        }
-        if (updatedBooking.getBooker() != null && !existingBooking.getBooker().equals(updatedBooking.getBooker())) {
-            existingBooking.setBooker(updatedBooking.getBooker());
-        }
-    }
 }

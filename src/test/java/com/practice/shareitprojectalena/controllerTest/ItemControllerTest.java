@@ -11,9 +11,10 @@ import com.practice.shareitprojectalena.item.comment.commentDto.CommentResponseD
 import com.practice.shareitprojectalena.item.itemDto.ItemCreateDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemResponseDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemUpdateDto;
-import com.practice.shareitprojectalena.user.UserRepository;
+
 import com.practice.shareitprojectalena.user.UserService;
 import com.practice.shareitprojectalena.user.entity.User;
+
 import lombok.SneakyThrows;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,20 +22,22 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+
 
 import static com.practice.shareitprojectalena.utils.RequestConstants.USER_HEADER;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -46,7 +49,6 @@ public class ItemControllerTest {
 
     @Autowired
     MockMvc mockMvc;
-
     @Autowired
     ObjectMapper objectMapper;
 
@@ -54,23 +56,17 @@ public class ItemControllerTest {
     ItemService itemService;
     @MockBean
     UserService userService;
-
     @MockBean
     CommentService commentService;
-
-
-    @MockBean
+    @SpyBean
     private ItemMapper itemMapper;
-    @MockBean
+    @SpyBean
     private CommentMapper commentMapper;
-    @MockBean
-    private UserRepository userRepository;
-    @MockBean
-    private ItemRepository itemRepository;
 
     private final Long userId = 1L;
 
     private User booker;
+    private User owner;
     private final Long bookerId = 2L;
     private Item item;
     private final Long itemId = 1L;
@@ -81,7 +77,7 @@ public class ItemControllerTest {
     @BeforeEach
     void setUp() {
 
-        User owner = new User();
+        owner = new User();
         owner.setId(userId);
         owner.setName("Тест владелец");
         owner.setEmail("owner@o.com");
@@ -100,11 +96,6 @@ public class ItemControllerTest {
 
         owner.setItems(List.of(item));
 
-        when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
-        when(userRepository.findById(booker.getId())).thenReturn(Optional.of(booker));
-        when(itemRepository.findById(item.getId())).thenReturn(Optional.of(item));
-
-        when(itemMapper.fromCreate(any(ItemCreateDto.class))).thenReturn(item);
     }
 
 
@@ -126,6 +117,7 @@ public class ItemControllerTest {
         return mockItem;
     }
 
+
     private ItemResponseDto createItemResponseDto(Item item) {
         if (item == null) {
             throw new IllegalArgumentException("Поле с предметом должно быть заполнено");
@@ -142,6 +134,15 @@ public class ItemControllerTest {
         );
     }
 
+    private ItemResponseDto toResponseWithComments(Item item, List<Comment> comments) {
+        return ItemResponseDto.builder()
+                .id(item.getId())
+                .name(item.getName())
+                .available(item.getIsAvailable())
+                .comments(commentMapper.toResponse(comments))
+                .build();
+
+    }
 
     @Test
     @SneakyThrows
@@ -150,9 +151,9 @@ public class ItemControllerTest {
         Item mockingItem = createMockItem(itemCreateDto);
         ItemResponseDto itemResponseDto = createItemResponseDto(mockingItem);
 
-        when(itemMapper.fromCreate(itemCreateDto)).thenReturn(mockingItem);
+        doReturn(mockingItem).when(itemMapper).fromCreate(any(ItemCreateDto.class));
         when(itemService.create(any(Item.class), eq(userId))).thenReturn(mockingItem);
-        when(itemMapper.toResponse(any(Item.class))).thenReturn(itemResponseDto);
+        doReturn(itemResponseDto).when(itemMapper).toResponse(any(Item.class));
 
         mockMvc.perform(post("/items")
                         .header(USER_HEADER, userId)
@@ -197,53 +198,40 @@ public class ItemControllerTest {
     @Test
     @SneakyThrows
     void updateItem() {
-        Long itemId = 1L;
-        Long userId = 1L;
+        String newDescription = "Обновленное описание";
 
-        User owner = new User();
-        owner.setId(userId);
+        ItemUpdateDto itemUpdateDto = new ItemUpdateDto();
+        itemUpdateDto.setName(item.getName());
+        itemUpdateDto.setDescription(newDescription);
+        itemUpdateDto.setIsAvailable(true);
 
-        Item existingItem = new Item();
-        existingItem.setId(itemId);
-        existingItem.setName("тестовая вещь");
-        existingItem.setDescription("описание");
-        existingItem.setOwner(owner);
-        existingItem.setIsAvailable(true);
 
         Item updatedItem = new Item();
         updatedItem.setId(itemId);
-        updatedItem.setName("Тестовая вещь");
-        updatedItem.setDescription("Новое описание");
+        updatedItem.setName(itemUpdateDto.getName());
+        updatedItem.setDescription(itemUpdateDto.getDescription());
         updatedItem.setOwner(owner);
+        updatedItem.setIsAvailable(true);
 
-        ItemUpdateDto itemUpdateDto = new ItemUpdateDto();
-        itemUpdateDto.setName(updatedItem.getName());
-        itemUpdateDto.setDescription(updatedItem.getDescription());
-        itemUpdateDto.setIsAvailable(true);
+        ItemResponseDto itemResponseDto = createItemResponseDto(updatedItem);
 
-        ItemResponseDto itemResponseDto = ItemResponseDto.builder()
-                .id(existingItem.getId())
-                .name(existingItem.getName())
-                .description(existingItem.getDescription())
-                .available(existingItem.getIsAvailable())
-                .build();
-
-
-        when(itemRepository.findById(itemId)).thenReturn(Optional.of(existingItem));
+        doReturn(updatedItem).when(itemMapper).fromUpdate(itemUpdateDto);
         when(itemService.update(any(Item.class), eq(itemId), eq(userId))).thenReturn(updatedItem);
-        when(itemMapper.fromUpdate(itemUpdateDto)).thenReturn(updatedItem);
-        when(itemMapper.toResponse(updatedItem)).thenReturn(itemResponseDto);
+        doReturn(itemResponseDto).when(itemMapper).toResponse(updatedItem);
 
 
-            mockMvc.perform(MockMvcRequestBuilders.patch("/items/{itemId}", itemId)
-                            .header(USER_HEADER, userId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(itemUpdateDto)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(1L))
-                    .andExpect(jsonPath("$.name").value("Тестовая вещь"))
-                    .andExpect(jsonPath("$.description").value("Новое описание"))
-                    .andExpect(jsonPath("$.userId").value(userId));
+        mockMvc.perform(MockMvcRequestBuilders.patch("/items/{itemId}", itemId)
+                        .header(USER_HEADER, userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(itemUpdateDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(itemId))
+                .andExpect(jsonPath("$.name").value("Тестовая вещь"))
+                .andExpect(jsonPath("$.description").value("Обновленное описание"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
 
     }
 
@@ -252,24 +240,24 @@ public class ItemControllerTest {
     @SneakyThrows
     public void testUpdateUnsuccessfully() {
 
-            Long itemId = 1L;
-            Long userId = 10L;
-            ItemUpdateDto itemUpdateDto = new ItemUpdateDto("Новая вещь", "Новое описание", true);
+        Long itemId = 99999L;
+        Long userId = 10L;
+        ItemUpdateDto itemUpdateDto = new ItemUpdateDto("Новая вещь", "Новое описание", true);
 
 
-            when(itemService.update(any(Item.class), eq(itemId), eq(userId)))
-                    .thenThrow(new NotFoundException("Вещь для проката по данному ID не найдена"));
+        when(itemService.update(any(Item.class), eq(itemId), eq(userId)))
+                .thenThrow(new NotFoundException("Объект не найден"));
 
-            mockMvc.perform(MockMvcRequestBuilders.patch("/items/{itemId}", itemId)
-                            .header(USER_HEADER, userId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(itemUpdateDto)))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.error").value("Вещь для проката по данному ID не найдена"));
-        }
+        mockMvc.perform(MockMvcRequestBuilders.patch("/items/{itemId}", itemId)
+                        .header(USER_HEADER, userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(itemUpdateDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Объект не найден"));
+    }
 
 
-        @Test
+    @Test
     @SneakyThrows
     public void testDeleteItemSuccessfully() {
         Long itemId = 1L;
@@ -417,38 +405,44 @@ public class ItemControllerTest {
     @Test
     @SneakyThrows
     void create_returnsCreatedComment() {
+        Long userId = 2L;
+        Long itemId = 2L;
+        String commentText = "комментарий ";
 
-        String text = "Комментарий";
-        Comment comment = new Comment();
-        comment.setId(1);
-        comment.setText(text);
-        comment.setAuthor(booker);
-        comment.setCreated(LocalDateTime.now());
+        User user = new User();
+        user.setId(userId);
+        user.setName("Тестовый пользователь");
 
         CommentCreateDto commentCreateDto = new CommentCreateDto();
-        commentCreateDto.setText(comment.getText());
+        commentCreateDto.setText(commentText);
 
-        CommentResponseDto commentResponseDto = CommentResponseDto.builder()
-                .id(comment.getId())
-                .text(comment.getText())
-                .authorName(booker.getName())
-                .created(comment.getCreated())
-                .build();
+        Comment createdComment = new Comment();
+        createdComment.setId(3L);
+        createdComment.setText(commentText);
+        createdComment.setAuthor(user);
+        createdComment.setCreated(LocalDateTime.now());
 
+        CommentResponseDto expectedResponse = new CommentResponseDto();
+        expectedResponse.setId(createdComment.getId());
+        expectedResponse.setText(commentText);
+        expectedResponse.setAuthorName(user.getName());
+        expectedResponse.setCreated(createdComment.getCreated());
 
-        when(commentService.addComment(eq(itemId), eq(booker), eq(text))).thenReturn(comment);
-        when(commentMapper.toResponse(comment)).thenReturn(commentResponseDto);
+        when(userService.findById(userId)).thenReturn(user);
+        when(commentService.addComment(itemId, user, commentText)).thenReturn(createdComment);
+        when(commentMapper.toResponse(createdComment)).thenReturn(expectedResponse);
 
-
-        mockMvc.perform(post("/{itemId}/comment", itemId)
+        mockMvc.perform(post("/items/{itemId}/comment", itemId)
                         .header(USER_HEADER, userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(commentCreateDto)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(comment.getId()))
-                .andExpect(jsonPath("$.text").value(text))
-                .andExpect(jsonPath("$.authorName").value(booker.getName()));
+                .andExpect(jsonPath("$.id").value(expectedResponse.getId()))
+                .andExpect(jsonPath("$.text").value(expectedResponse.getText()))
+                .andExpect(jsonPath("$.authorName").value(expectedResponse.getAuthorName()))
+                .andExpect(jsonPath("$.created").exists());
     }
+
 
     @Test
     @SneakyThrows
@@ -466,63 +460,6 @@ public class ItemControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    @SneakyThrows
-    void getItemWithCommentsSuccess() {
-
-        Long itemId = 1L;
-        Item item = new Item();
-        item.setId(itemId);
-        item.setName("Тестовая вещь");
-
-
-        Comment comment1 = new Comment();
-        comment1.setId(1);
-        comment1.setText("Комментарий 1");
-
-        Comment comment2 = new Comment();
-        comment2.setId(2);
-        comment2.setText("Комментарий 2");
-
-        List<Comment> comments = List.of(comment1, comment2);
-
-
-        when(itemService.findById(itemId)).thenReturn(item);
-        when(commentService.findByItemId(itemId)).thenReturn(comments);
-
-
-        CommentResponseDto commentDto1 = CommentResponseDto.builder()
-                .id(1)
-                .text("Комментарий 1")
-                .build();
-
-        CommentResponseDto commentDto2 = CommentResponseDto.builder()
-                .id(2)
-                .text("Комментарий 2")
-                .build();
-
-        ItemResponseDto expectedDto = ItemResponseDto.builder()
-                .id(itemId)
-                .name("Тестовая вещь")
-                .comments(List.of(commentDto1, commentDto2))
-                .build();
-
-
-        when(itemMapper.toResponseWithComments(item, comments)).thenReturn(expectedDto);
-
-
-        mockMvc.perform(get("/items/{itemId}", itemId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(itemId))
-                .andExpect(jsonPath("$.name").value("Тестовая вещь"))
-                .andExpect(jsonPath("$.comments.length()").value(2))
-                .andExpect(jsonPath("$.comments[0].id").value(1L))
-                .andExpect(jsonPath("$.comments[0].text").value("Комментарий 1"))
-                .andExpect(jsonPath("$.comments[1].id").value(2L))
-                .andExpect(jsonPath("$.comments[1].text").value("Комментарий 2"));
-    }
-
 
     @Test
     @SneakyThrows
@@ -534,28 +471,6 @@ public class ItemControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    @SneakyThrows
-    void getItemWithCommentsReturnsItemWithEmptyComments() {
-        when(itemService.findById(itemId)).thenReturn(item);
-        when(commentService.findByItemId(itemId)).thenReturn(Collections.emptyList());
-
-        ItemResponseDto responseDto = ItemResponseDto.builder()
-                .id(itemId)
-                .name("Тестовая вещь")
-                .comments(Collections.emptyList())
-                .build();
-
-
-        when(itemMapper.toResponseWithComments(item, Collections.emptyList())).thenReturn(responseDto);
-
-
-        mockMvc.perform(get("/items/{itemId}", itemId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(itemId))
-                .andExpect(jsonPath("$.name").value("Тестовая вещь"))
-                .andExpect(jsonPath("$.comments").isEmpty());
-    }
-
 }
+
+

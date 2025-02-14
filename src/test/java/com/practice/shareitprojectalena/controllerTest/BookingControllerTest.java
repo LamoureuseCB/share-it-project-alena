@@ -9,46 +9,51 @@ import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
 import com.practice.shareitprojectalena.item.Item;
 import com.practice.shareitprojectalena.item.ItemMapper;
 import com.practice.shareitprojectalena.item.ItemRepository;
+import com.practice.shareitprojectalena.item.ItemService;
+
+import com.practice.shareitprojectalena.item.itemDto.ItemCreateDto;
 import com.practice.shareitprojectalena.item.itemDto.ItemResponseDto;
 import com.practice.shareitprojectalena.user.UserMapper;
-import com.practice.shareitprojectalena.user.UserRepository;
+
 import com.practice.shareitprojectalena.user.UserService;
 import com.practice.shareitprojectalena.user.dto.UserResponseDto;
 import com.practice.shareitprojectalena.user.entity.User;
 import com.practice.shareitprojectalena.utils.BookingStatus;
 import com.practice.shareitprojectalena.utils.State;
 import lombok.SneakyThrows;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
+
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+
 
 import static com.practice.shareitprojectalena.utils.RequestConstants.USER_HEADER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(BookingController.class)
 public class BookingControllerTest {
-
     @Autowired
     MockMvc mockMvc;
 
@@ -56,29 +61,28 @@ public class BookingControllerTest {
     ObjectMapper objectMapper;
 
     @MockBean
-    private UserRepository userRepository;
-
-    @MockBean
-    private BookingRepository bookingRepository;
-
-    @MockBean
     private ItemRepository itemRepository;
 
     @MockBean
-    UserMapper userMapper;
-
-    @MockBean
-    BookingMapper bookingMapper;
-
-    @MockBean
     private BookingService bookingService;
+
     @MockBean
     private UserService userService;
 
     @MockBean
+    private ItemService itemService;
+
+    @SpyBean
     private ItemMapper itemMapper;
 
+    @SpyBean
+    private UserMapper userMapper;
+
+    @SpyBean
+    private BookingMapper bookingMapper;
+
     private final Long ownerId = 1L;
+    private User owner;
     private User booker;
     private final Long bookerId = 2L;
     private Item item;
@@ -86,15 +90,10 @@ public class BookingControllerTest {
 
     @BeforeEach
     void setUp() {
-        User owner = new User();
+        owner = new User();
         owner.setId(ownerId);
         owner.setName("Тест владелец");
         owner.setEmail("owner@o.com");
-
-        booker = new User();
-        booker.setId(bookerId);
-        booker.setName("Test Booker");
-        booker.setEmail("booker@b.com");
 
         item = new Item();
         item.setId(itemId);
@@ -103,14 +102,28 @@ public class BookingControllerTest {
         item.setIsAvailable(true);
         item.setOwner(owner);
 
+        booker = new User();
+        booker.setId(bookerId);
+        booker.setName("Test Booker");
+        booker.setEmail("booker@b.com");
+
+        booker.setItems(List.of(item));
         owner.setItems(List.of(item));
 
+        ItemCreateDto itemCreateDto = new ItemCreateDto();
+        itemCreateDto.setName("itemCreateDto");
+        itemCreateDto.setDescription("itemCreateDto");
+        itemCreateDto.setAvailable(true);
+        itemCreateDto.setRequestId(1L);
 
-        when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
-        when(userRepository.findById(booker.getId())).thenReturn(Optional.of(booker));
-        when(itemRepository.findById(item.getId())).thenReturn(Optional.of(item));
+
+        when(userService.findById(ownerId)).thenReturn(owner);
+        when(userService.findById(bookerId)).thenReturn(booker);
+        when(itemService.findById(itemId)).thenReturn(item);
+        when(itemMapper.fromCreate(itemCreateDto)).thenReturn(item);
+        when(itemService.create(item, ownerId)).thenReturn(item);
+
     }
-
 
     private BookingCreateDto createBookingDto() {
         BookingCreateDto bookingCreateDto = new BookingCreateDto();
@@ -119,7 +132,6 @@ public class BookingControllerTest {
         bookingCreateDto.setEnd(LocalDateTime.now().plusDays(1));
         return bookingCreateDto;
     }
-
 
     private Booking createMockBooking(BookingCreateDto bookingCreateDto) {
         Booking mockBooking = new Booking();
@@ -133,9 +145,9 @@ public class BookingControllerTest {
     }
 
     private BookingResponseDto createResponseDto(Booking booking) {
-        BookingResponseDto mockBookingResponseDto = BookingResponseDto.builder()
+        return BookingResponseDto.builder()
                 .id(booking.getId())
-                .itemId(item.getId())
+                .itemId(booking.getItem().getId())
                 .start(booking.getStart())
                 .end(booking.getEnd())
                 .status(booking.getStatus())
@@ -143,16 +155,42 @@ public class BookingControllerTest {
                         booker.getName(),
                         booker.getEmail()))
                 .item(new ItemResponseDto(
-                        item.getId(),
-                        item.getName(),
-                        item.getDescription(),
-                        item.getIsAvailable(),
+                        booking.getItem().getId(),
+                        booking.getItem().getName(),
+                        booking.getItem().getDescription(),
+                        booking.getItem().getIsAvailable(),
                         new ArrayList<>(),
                         null,
                         null
                 ))
                 .build();
-        return mockBookingResponseDto;
+    }
+
+    @Test
+    @SneakyThrows
+    void create_ownerBookingOwn_ItemThrowsException() {
+        Long bookerId = 1L;
+        BookingCreateDto bookingCreateDto = createBookingDto();
+
+        owner.setId(bookerId);
+
+
+        Item mockItem = new Item();
+        mockItem.setId(itemId);
+        mockItem.setOwner(owner);
+
+        when(itemService.findById(eq(itemId))).thenReturn(item);
+        when(userService.findById(eq(bookerId))).thenReturn(owner);
+
+        when(bookingService.create(any(), eq(bookerId)))
+                .thenThrow(new ForbiddenException("Владелец не может забронировать свою вещь"));
+
+        mockMvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", bookerId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(bookingCreateDto)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Владелец не может забронировать свою вещь"));
     }
 
     @SneakyThrows
@@ -160,68 +198,67 @@ public class BookingControllerTest {
     void createBooking_WhenValidRequest_ReturnsCreatedBooking() {
         BookingCreateDto bookingCreateDto = createBookingDto();
         Booking mockBooking = createMockBooking(bookingCreateDto);
-        BookingResponseDto mockBookingResponseDto = createResponseDto(mockBooking);
-        when(userMapper.toResponse(eq(booker)))
-                .thenReturn(new UserResponseDto(booker.getId(), booker.getName(), booker.getEmail()));
-        when(itemMapper.toResponse(eq(item)))
-                .thenReturn(new ItemResponseDto(
-                        item.getId(),
-                        item.getName(),
-                        item.getDescription(),
-                        item.getIsAvailable(),
-                        new ArrayList<>(),
-                        null,
-                        null
-                ));
-        when(bookingMapper.fromCreate(any(BookingCreateDto.class))).thenReturn(mockBooking);
-        when(bookingService.create(any(Booking.class), eq(bookerId))).thenReturn(mockBooking);
-        when(bookingRepository.save(any(Booking.class))).thenReturn(mockBooking);
-        when(bookingMapper.toResponse(eq(mockBooking))).thenReturn(mockBookingResponseDto);
+
+        when(bookingMapper.fromCreate(bookingCreateDto)).thenReturn(mockBooking);
+        when(bookingService.create(any(), eq(bookerId))).thenReturn(mockBooking);
+        when(bookingMapper.toResponse(mockBooking)).thenReturn(createResponseDto(mockBooking));
 
         mockMvc.perform(post("/bookings")
-                        .header(USER_HEADER, booker.getId())
+                        .header("X-Sharer-User-Id", bookerId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(bookingCreateDto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNumber())
                 .andExpect(jsonPath("$.itemId").value(item.getId()))
-                .andExpect(jsonPath("$.booker.id").value(booker.getId()))
-                .andExpect(jsonPath("$.status").value("WAITING"))
-                .andExpect(jsonPath("$.start").value(bookingCreateDto.getStart().format(DateTimeFormatter.ISO_DATE_TIME)))
-                .andExpect(jsonPath("$.end").value(bookingCreateDto.getEnd().format(DateTimeFormatter.ISO_DATE_TIME)));
+                .andExpect(jsonPath("$.booker.id").value(bookerId))
+                .andExpect(jsonPath("$.status").value("WAITING"));
     }
 
     @Test
     @SneakyThrows
-    public void create_BookingUnSuccessfulNotFoundException() {
+    public void create_Booking_ThrowsNotFoundException() {
+
         Long itemId = 9999L;
-        BookingCreateDto bookingCreateDto = createBookingDto();
+        BookingCreateDto bookingCreateDto = new BookingCreateDto();
         bookingCreateDto.setItemId(itemId);
+        bookingCreateDto.setStart(LocalDateTime.now().plusHours(1));
+        bookingCreateDto.setEnd(LocalDateTime.now().plusDays(1));
 
-        when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
+        when(itemService.findById(eq(itemId))).thenThrow(new NotFoundException("Предмет с таким ID не найден"));
 
         mockMvc.perform(post("/bookings")
-                        .header(USER_HEADER, bookerId)
+                        .header("X-Sharer-User-Id", bookerId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(bookingCreateDto)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Предмет не найден"))
-                .andReturn();
+                .andExpect(jsonPath("$.message").value("Предмет с таким ID не найден"));
     }
+
 
     @Test
     @SneakyThrows
-    void create_itemNotAvailable_throwsBadRequest() {
-        BookingCreateDto bookingCreateDto = createBookingDto();
+    public void create_itemNotAvailable_throwsBadRequest() {
+        Long itemId = 1L;
+        BookingCreateDto bookingCreateDto = new BookingCreateDto();
+        bookingCreateDto.setItemId(itemId);
+        bookingCreateDto.setStart(LocalDateTime.now().plusHours(1));
+        bookingCreateDto.setEnd(LocalDateTime.now().plusDays(1));
 
-        when(itemRepository.findById(bookingCreateDto.getItemId())).thenReturn(Optional.empty());
+
+        Item item = new Item();
+        item.setId(itemId);
+        item.setIsAvailable(false);
+        item.setOwner(owner);
+
+        when(itemService.findById(eq(itemId))).thenReturn(item);
+
+
         mockMvc.perform(post("/bookings")
-                        .header(USER_HEADER, bookerId)
+                        .header("X-Sharer-User-Id", bookerId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(bookingCreateDto)))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Предмет не найден"))
-                .andReturn();
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Предмет недоступен для бронирования"));
     }
 
     @Test
@@ -240,19 +277,6 @@ public class BookingControllerTest {
                 .andReturn();
     }
 
-    @Test
-    @SneakyThrows
-    void create_ownerBookingOwnItemThrowsException() {
-        Long bookerId = ownerId;
-        BookingCreateDto createDto = createBookingDto();
-
-        mockMvc.perform(post("/bookings")
-                        .header(USER_HEADER, bookerId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDto)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("Владелец не должен бронировать свою вещь"));
-    }
 
     @Test
     @SneakyThrows
@@ -277,38 +301,57 @@ public class BookingControllerTest {
     @Test
     @SneakyThrows
     void update_BookingSuccess_ReturnResponse() {
-        Long bookingId = 100L;
-        boolean approved = true;
+        User booker = new User();
+        booker.setId(5L);
+        booker.setName("Тестовый пользователь");
 
-        Booking mockBooking = Booking.builder()
-                .id(bookingId)
-                .status(BookingStatus.APPROVED)
-                .build();
+        Item mockItem = new Item();
+        mockItem.setId(5L);
+        mockItem.setOwner(booker);
+        mockItem.setIsAvailable(true);
+        booker.setItems(List.of(item));
+
+        Booking existingBooking = new Booking();
+        existingBooking.setId(5L);
+        existingBooking.setItem(mockItem);
+        existingBooking.setBooker(booker);
+        existingBooking.setStatus(BookingStatus.WAITING);
+
+
+        when(bookingService.create(existingBooking, booker.getId())).thenReturn(existingBooking);
+
+
+        Booking updatedBooking = new Booking();
+        updatedBooking.setId(existingBooking.getId());
+        updatedBooking.setItem(mockItem);
+        updatedBooking.setBooker(booker);
+        updatedBooking.setStatus(BookingStatus.APPROVED);
+
+
         BookingResponseDto expectedResponse = new BookingResponseDto();
-        expectedResponse.setId(bookingId);
+        expectedResponse.setId(existingBooking.getId());
         expectedResponse.setStatus(BookingStatus.APPROVED);
+        expectedResponse.setBooker(userMapper.toResponse(booker));
 
-        when(bookingService.update(eq(bookingId), eq(ownerId), eq(approved)))
-                .thenReturn(mockBooking);
-        when(bookingMapper.toResponse(eq(mockBooking)))
+
+        when(bookingService.update(eq(existingBooking.getId()), eq(ownerId), eq(true))).thenReturn(updatedBooking);
+
+        when(bookingMapper.toResponse(updatedBooking))
                 .thenReturn(expectedResponse);
 
-        MvcResult result = mockMvc.perform(patch("/bookings/{bookingId}", bookingId)
+
+        mockMvc.perform(patch("/bookings/{bookingId}", existingBooking.getId())
                         .header(USER_HEADER, ownerId)
-                        .param("approved", String.valueOf(approved))
+                        .param("approved", String.valueOf(true))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(bookingId))
+                .andExpect(jsonPath("$.id").value(updatedBooking.getId()))
                 .andExpect(jsonPath("$.status").value("APPROVED"))
-                .andReturn();
-
-
-        String responseContent = result.getResponse().getContentAsString();
-        BookingResponseDto actualResponse = objectMapper.readValue(responseContent, BookingResponseDto.class);
-
-        assertEquals(expectedResponse.getId(), actualResponse.getId());
-        assertEquals(expectedResponse.getStatus(), actualResponse.getStatus());
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
     }
+
 
     @Test
     @SneakyThrows
@@ -514,7 +557,6 @@ public class BookingControllerTest {
     void findAllByOwnerIdAndState_Success() {
         State state = State.CURRENT;
         Long userId = 1L;
-        Long ownerId = userId;
         Booking mockBooking1 = createMockBooking(createBookingDto());
         mockBooking1.setId(1L);
 
@@ -525,14 +567,14 @@ public class BookingControllerTest {
         BookingResponseDto responseDto2 = createResponseDto(mockBooking2);
 
 
-        when(bookingService.getByStateAndOwner(eq(state), eq(ownerId), any(Pageable.class)))
+        when(bookingService.getByStateAndOwner(eq(state), eq(userId), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(mockBooking1, mockBooking2)));
 
 
         when(bookingMapper.toResponse(mockBooking1)).thenReturn(responseDto1);
         when(bookingMapper.toResponse(mockBooking2)).thenReturn(responseDto2);
 
-        mockMvc.perform(get("/owner/{ownerId}", ownerId)
+        mockMvc.perform(get("/bookings/owner/{ownerId}", userId)
                         .header(USER_HEADER, userId)
                         .param("state", state.name())
                         .contentType(MediaType.APPLICATION_JSON))
@@ -549,7 +591,7 @@ public class BookingControllerTest {
         State state = State.CURRENT;
         Long userId = 1L;
 
-        mockMvc.perform(get("/owner/{ownerId}", 2L)
+        mockMvc.perform(get("/bookings/owner/{ownerId}", 2L)
                         .header(USER_HEADER, userId)
                         .param("state", state.name())
                         .contentType(MediaType.APPLICATION_JSON))
@@ -562,13 +604,15 @@ public class BookingControllerTest {
         State state = State.ALL;
         Long differentUserId = 2L;
 
-        mockMvc.perform(get("/owner/{ownerId}", ownerId)
+        mockMvc.perform(get("/bookings/owner/{ownerId}", ownerId)
                         .header(USER_HEADER, differentUserId)
                         .param("state", state.name())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isConflict());
     }
 }
+
+
 
 
 

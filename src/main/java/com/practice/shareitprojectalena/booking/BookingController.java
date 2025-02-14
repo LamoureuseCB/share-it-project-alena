@@ -3,10 +3,6 @@ package com.practice.shareitprojectalena.booking;
 import com.practice.shareitprojectalena.booking.dto.BookingCreateDto;
 import com.practice.shareitprojectalena.booking.dto.BookingResponseDto;
 import com.practice.shareitprojectalena.error.exceptions.ConflictException;
-import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
-import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
-import com.practice.shareitprojectalena.item.Item;
-import com.practice.shareitprojectalena.item.ItemRepository;
 import com.practice.shareitprojectalena.utils.State;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +23,9 @@ import static com.practice.shareitprojectalena.utils.RequestConstants.USER_HEADE
 @RequestMapping("/bookings")
 public class BookingController {
     private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
-    private final BookingMapper bookingMapper;
+    public final BookingMapper bookingMapper;
     private final BookingService bookingService;
-    private final ItemRepository itemRepository;
+
 
 
     @PostMapping
@@ -38,22 +34,12 @@ public class BookingController {
             @RequestHeader(USER_HEADER) Long bookerId,
             @RequestBody @Valid BookingCreateDto bookingCreateDto) {
         logger.info("Получен запрос на создание бронирования: {}", bookingCreateDto);
-        try {
-            Item item = itemRepository.findById(bookingCreateDto.getItemId())
-                    .orElseThrow(() -> new NotFoundException("Предмет не найден"));
-            Long ownerId = item.getOwner().getId();
-            if (ownerId.equals(bookerId)) {
-                throw new ForbiddenException("Владелец не должен бронировать свою вещь");
-            }
-            Booking booking = bookingMapper.fromCreate(bookingCreateDto);
-            logger.info("Созданный объект Booking: {}", booking);
-            Booking createdBooking = bookingService.create(booking, bookerId);
-            logger.info("Созданный объект Booking из сервиса: {}", createdBooking);
-            return bookingMapper.toResponse(createdBooking);
-        } catch (NotFoundException exception) {
-            logger.error("Ошибка: {}", exception.getMessage());
-            throw exception;
-        }
+        Booking booking = bookingMapper.fromCreate(bookingCreateDto);
+        logger.info("Созданный объект Booking: {}", booking);
+        Booking createdBooking = bookingService.create(booking, bookerId);
+        logger.info("Созданный объект Booking из сервиса: {}", createdBooking);
+        return bookingMapper.toResponse(createdBooking);
+
     }
 
 
@@ -102,12 +88,10 @@ public class BookingController {
         }
 
         Page<Booking> bookings = bookingService.getByStateAndOwner(state, ownerId, pageable);
-
         return bookings.map(bookingMapper::toResponse);
     }
 
-
-    @GetMapping(value = "/owner")
+    @GetMapping("/owner")
     public List<BookingResponseDto> getBookingsByOwner(
             @RequestHeader(USER_HEADER) Long ownerId,
             @RequestParam(defaultValue = "ALL") State state,
@@ -116,6 +100,7 @@ public class BookingController {
         Page<Booking> bookings = bookingService.getBookingByBooker(state, ownerId, from, size);
         return bookings.stream().map(bookingMapper::toResponse).toList();
     }
+
 }
 
 
