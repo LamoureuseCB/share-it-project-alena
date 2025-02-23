@@ -1,0 +1,39 @@
+
+services:
+  postgres-service:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_DB=shareit-alena
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+  shareit-server:
+    build:  ./server
+    container_name: shareit-server
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres-service
+    environment:
+      - DB_HOST=postgres-service
+      - DB_PORT=5432
+      - DB_NAME=shareit-alena
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+  shareit-gateway:
+    build: ./gateway
+    container_name: shareit-gateway
+    restart: always
+    ports:
+      - "8081:8081"
+    depends_on:
+      - shareit-server
+    environment:
+      - SERVER_URL=http://shareit-server:8080
+
