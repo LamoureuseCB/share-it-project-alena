@@ -1,8 +1,6 @@
 package com.practice.shareitprojectalena.error.errorHandler;
 
-import com.practice.shareitprojectalena.error.exceptions.ForbiddenException;
-import com.practice.shareitprojectalena.error.exceptions.NotFoundException;
-import com.practice.shareitprojectalena.error.exceptions.ValidationException;
+import com.practice.shareitprojectalena.error.exceptions.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -12,9 +10,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class ErrorHandler {
     @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse validationHandle(final ValidationException e){
+    public ErrorResponse validationHandle(final ValidationException e) {
         return new ErrorResponse("Ошибка валидации", e.getMessage());
     }
+
+    @ExceptionHandler(ConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse conflictHandle(final ConflictException e) {
+        return new ErrorResponse("Конфликт", e.getMessage());
+    }
+
+
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse objectFoundHandle(final NotFoundException e) {
@@ -26,9 +32,22 @@ public class ErrorHandler {
     public ErrorResponse runtimeExceptionHandle(final RuntimeException e) {
         return new ErrorResponse("Сервер не может обработать запрос", e.getMessage());
     }
+
     @ExceptionHandler(ForbiddenException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ErrorResponse forbiddenExceptionHandle(final ForbiddenException e){
+    public ErrorResponse forbiddenExceptionHandle(final ForbiddenException e) {
         return new ErrorResponse("Вносить изменения может только владелец", e.getMessage());
+    }
+
+    @ExceptionHandler(InvalidPageException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse invalidPageHandle(final InvalidPageException e) {
+        return new ErrorResponse("Ошибка!Страница не должна быть меньше нуля", e.getMessage());
+    }
+
+    @ExceptionHandler(InvalidSizeException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse invalidSizeHandle(final InvalidSizeException e) {
+        return new ErrorResponse("Ошибка!Размер должен быть положительным", e.getMessage());
     }
 }

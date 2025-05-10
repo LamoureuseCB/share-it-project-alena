@@ -1,18 +1,14 @@
 package com.practice.shareitprojectalena.request.dto;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@ToString
+@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ItemRequestDto {
+public class RequestResponse {
     private Long id;
     private String description;
-    private Long requesterId;
     private LocalDateTime created;
 }
